@@ -2,87 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* ClearClause — Apple HIG-inspired design system. All colors HSL. */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Surfaces — Apple "grouped background" hierarchy */
+    --background: 240 10% 97%;          /* systemGroupedBackground */
+    --foreground: 0 0% 9%;              /* label */
+    --surface: 0 0% 100%;               /* secondarySystemGroupedBackground */
+    --surface-elevated: 0 0% 100%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 9%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* System Blue */
+    --primary: 211 100% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 6% 94%;
+    --secondary-foreground: 0 0% 9%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 240 6% 94%;
+    --muted-foreground: 240 4% 40%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 211 100% 96%;
+    --accent-foreground: 211 100% 35%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* System Red */
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* System Green / Yellow */
+    --success: 142 71% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 41 100% 47%;
+    --warning-foreground: 0 0% 9%;
 
-    --radius: 0.5rem;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 211 100% 50%;
+
+    --radius: 0.875rem;
+
+    --shadow-sm: 0 1px 2px hsl(240 6% 10% / 0.04);
+    --shadow-md: 0 4px 16px hsl(240 6% 10% / 0.06);
+    --shadow-lg: 0 12px 40px hsl(240 6% 10% / 0.10);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+    --surface: 240 6% 9%;
+    --surface-elevated: 240 5% 12%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 240 6% 9%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 240 6% 11%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 211 100% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 65%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 211 60% 18%;
+    --accent-foreground: 211 100% 75%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 4 90% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --success: 142 65% 48%;
+    --success-foreground: 0 0% 100%;
+    --warning: 41 100% 55%;
+    --warning-foreground: 0 0% 9%;
+
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 211 100% 55%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +114,25 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3, h4 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    letter-spacing: -0.022em;
+  }
+}
+
+@layer utilities {
+  .shadow-card { box-shadow: var(--shadow-md); }
+  .shadow-elevated { box-shadow: var(--shadow-lg); }
+  .glass {
+    background: hsl(var(--surface) / 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
 }
