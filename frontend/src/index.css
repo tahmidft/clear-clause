@@ -6,6 +6,17 @@
 
 @layer base {
   :root {
+    /* ClearClause semantic tokens (Apple HIG palette) */
+    --color-blue: #007aff;
+    --color-green: #34c759;
+    --color-yellow: #ff9f0a;
+    --color-red: #ff3b30;
+    --color-bg: #f2f2f7;
+    --color-surface: #ffffff;
+    --color-label: #000000;
+    --color-secondary: #3c3c43;
+    --color-separator: #c6c6c8;
+
     /* Surfaces — Apple "grouped background" hierarchy */
     --background: 240 10% 97%;          /* systemGroupedBackground */
     --foreground: 0 0% 9%;              /* label */
@@ -62,6 +73,16 @@
   }
 
   .dark {
+    --color-blue: #0a84ff;
+    --color-green: #30d158;
+    --color-yellow: #ff9f0a;
+    --color-red: #ff453a;
+    --color-bg: #000000;
+    --color-surface: #1c1c1e;
+    --color-label: #ffffff;
+    --color-secondary: #ebebf5;
+    --color-separator: #38383a;
+
     --background: 0 0% 0%;
     --foreground: 0 0% 98%;
     --surface: 240 6% 9%;
@@ -116,13 +137,14 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-      "Segoe UI", system-ui, -apple-system, sans-serif;
+      "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
   h1, h2, h3, h4 {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
     letter-spacing: -0.022em;
   }
 }
