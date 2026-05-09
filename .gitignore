@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Environment (keep secrets out of git)
+.env
+!.env.example
+
+# Python local artifacts
+.venv/
+__pycache__/
+*.pyc
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

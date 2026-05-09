@@ -1,13 +1,15 @@
 import mimetypes
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from db.database import ContractRow, get_db
+from config import get_settings
 from deps import get_current_user_id
 from models.schemas import ContractSummary, ContractUploadResponse
+from security import FixedWindowRateLimiter
 from services import parser
 from services import storage as storage_service
 
@@ -19,6 +21,7 @@ ALLOWED = {
     "application/x-pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
+limiter = FixedWindowRateLimiter()
 
 
 def _content_type(filename: str, upload: UploadFile) -> str:
@@ -36,12 +39,38 @@ def _content_type(filename: str, upload: UploadFile) -> str:
     )
 
 
+def _validate_magic_bytes(content_type: str, raw: bytes) -> None:
+    if content_type == "application/pdf" and not raw.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Invalid PDF file signature.")
+    if content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        if not raw.startswith(b"PK"):
+            raise HTTPException(status_code=400, detail="Invalid DOCX file signature.")
+
+
+def _apply_text_retention(db: Session, user_id: UUID, days: int) -> None:
+    if days <= 0:
+        return
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    (
+        db.query(ContractRow)
+        .filter(
+            ContractRow.user_id == user_id,
+            ContractRow.created_at < cutoff,
+            ContractRow.raw_text.isnot(None),
+        )
+        .update({"raw_text": None}, synchronize_session=False)
+    )
+    db.commit()
+
+
 @router.post("/upload", response_model=ContractUploadResponse)
 async def upload_contract(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> ContractUploadResponse:
+    settings = get_settings()
+    limiter.check(f"upload:{user_id}", settings.rate_limit_uploads_per_minute)
     if not file.filename:
         raise HTTPException(status_code=400, detail="File name is required.")
 
@@ -54,6 +83,7 @@ async def upload_contract(
         )
     if len(raw) == 0:
         raise HTTPException(status_code=400, detail="The file appears to be empty.")
+    _validate_magic_bytes(content_type, raw)
 
     try:
         text = parser.extract_text(raw, file.filename)
@@ -61,8 +91,9 @@ async def upload_contract(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     uid = UUID(user_id)
+    _apply_text_retention(db, uid, settings.contract_text_retention_days)
     try:
-        file_url = storage_service.upload_contract_bytes(user_id, raw, file.filename, content_type)
+        storage_path, file_url = storage_service.upload_contract_bytes(user_id, raw, file.filename, content_type)
     except Exception as e:
         raise HTTPException(
             status_code=502,
@@ -70,12 +101,14 @@ async def upload_contract(
         ) from e
 
     now = datetime.now(timezone.utc)
+    store_raw_text = settings.contract_text_persistence_enabled
     row = ContractRow(
         id=uuid4(),
         user_id=uid,
         file_name=file.filename,
+        storage_path=storage_path,
         file_url=file_url,
-        raw_text=text,
+        raw_text=text if store_raw_text else None,
         created_at=now,
     )
     db.add(row)
@@ -86,6 +119,7 @@ async def upload_contract(
         id=row.id,
         user_id=row.user_id,
         file_name=row.file_name,
+        storage_path=row.storage_path,
         file_url=row.file_url,
         created_at=row.created_at,
     )
@@ -96,7 +130,9 @@ def list_contracts(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> list[ContractSummary]:
+    settings = get_settings()
     uid = UUID(user_id)
+    _apply_text_retention(db, uid, settings.contract_text_retention_days)
     rows = (
         db.query(ContractRow)
         .filter(ContractRow.user_id == uid)
@@ -108,6 +144,7 @@ def list_contracts(
             id=r.id,
             user_id=r.user_id,
             file_name=r.file_name,
+            storage_path=r.storage_path,
             file_url=r.file_url,
             created_at=r.created_at,
         )
@@ -131,7 +168,7 @@ def delete_contract(
         raise HTTPException(status_code=404, detail="Contract not found.")
 
     try:
-        storage_service.delete_contract_object(row.file_url)
+        storage_service.delete_contract_object(row.storage_path, row.file_url)
     except Exception:
         pass
 

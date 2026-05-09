@@ -5,12 +5,15 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from config import get_settings
 from db.database import AnalysisRow, ContractRow, PreferenceRow, get_db
 from deps import get_current_user_id
 from models.schemas import AnalysisResponse, SectionSchema
+from security import FixedWindowRateLimiter
 from services import gemini
 
 router = APIRouter()
+limiter = FixedWindowRateLimiter()
 
 
 def _contract_for_user(db: Session, contract_id: UUID, user_id: str) -> ContractRow | None:
@@ -71,6 +74,8 @@ def run_analysis(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ) -> AnalysisResponse:
+    settings = get_settings()
+    limiter.check(f"analysis:{user_id}", settings.rate_limit_analysis_per_minute)
     contract = _contract_for_user(db, contract_id, user_id)
     if not contract:
         raise HTTPException(status_code=404, detail="Contract not found.")

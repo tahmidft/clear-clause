@@ -23,7 +23,7 @@ export default function Landing() {
                 <Link to="/signup">Get Started</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="min-h-12 min-w-[200px] rounded-[10px] text-[17px]" aria-label="See how ClearClause works">
-                <Link to="#how-it-works">See How It Works</Link>
+                <a href="#how-it-works">See How It Works</a>
               </Button>
             </div>
           </div>
@@ -41,7 +41,7 @@ export default function Landing() {
                 },
                 {
                   title: "Analyze",
-                  body: "Gemini maps each section to risk levels and your saved preferences.",
+                  body: "Our AI maps each section to risk levels and your saved preferences.",
                   Icon: Brain,
                 },
                 {

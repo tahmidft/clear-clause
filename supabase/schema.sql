@@ -20,6 +20,7 @@ create table contracts (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid references auth.users(id) on delete cascade,
   file_name text not null,
+  storage_path text,
   file_url text,
   raw_text text,
   created_at timestamp with time zone default now()

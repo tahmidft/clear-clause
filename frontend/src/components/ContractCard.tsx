@@ -73,6 +73,7 @@ export function ContractCard({
 
   const score = analysis?.overall_score ?? null;
   const accept = analysis?.recommendation === "accept";
+  const statusLabel = isAnalyzing ? "Analyzing" : analysisError ? "Failed" : analysis ? "Completed" : "Pending";
 
   const deleteControls = (
     <>
@@ -163,6 +164,10 @@ export function ContractCard({
           </p>
         </Link>
         {deleteControls}
+      </div>
+
+      <div className="inline-flex max-w-fit items-center rounded-full border border-[var(--color-separator)] px-3 py-1 text-xs font-medium text-[var(--color-secondary)]">
+        Status: {statusLabel}
       </div>
 
       <div className="flex flex-wrap items-center gap-4">

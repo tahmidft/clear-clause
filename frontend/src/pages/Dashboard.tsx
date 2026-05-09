@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContractCard } from "@/components/ContractCard";
 import { UploadZone } from "@/components/UploadZone";
@@ -15,6 +16,8 @@ export default function Dashboard() {
   const [uploading, setUploading] = React.useState(false);
   const [analyzingIds, setAnalyzingIds] = React.useState<Set<string>>(() => new Set());
   const [errorIds, setErrorIds] = React.useState<Set<string>>(() => new Set());
+  const [query, setQuery] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState<"all" | "completed" | "analyzing" | "failed" | "pending">("all");
 
   const load = React.useCallback(async () => {
     setLoadingList(true);
@@ -125,6 +128,20 @@ export default function Dashboard() {
     }
   };
 
+  const filteredContracts = React.useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return contracts.filter((c) => {
+      if (needle && !c.file_name.toLowerCase().includes(needle)) {
+        return false;
+      }
+      if (statusFilter === "all") return true;
+      if (statusFilter === "analyzing") return analyzingIds.has(c.id);
+      if (statusFilter === "failed") return errorIds.has(c.id);
+      if (statusFilter === "completed") return Boolean(analyses[c.id]) && !analyzingIds.has(c.id) && !errorIds.has(c.id);
+      return !analyses[c.id] && !analyzingIds.has(c.id) && !errorIds.has(c.id);
+    });
+  }, [contracts, query, statusFilter, analyzingIds, errorIds, analyses]);
+
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -153,6 +170,35 @@ export default function Dashboard() {
 
       <div className="mt-8">
         <UploadZone onFileSelected={onUpload} disabled={uploading} className="mb-10" />
+        <div className="mb-6 grid gap-3 md:grid-cols-[1fr_auto]">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search contracts by file name"
+            className="min-h-11 rounded-[10px]"
+            aria-label="Search contracts"
+          />
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "all", label: "All" },
+              { value: "completed", label: "Completed" },
+              { value: "analyzing", label: "Analyzing" },
+              { value: "failed", label: "Failed" },
+              { value: "pending", label: "Pending" },
+            ].map((opt) => (
+              <Button
+                key={opt.value}
+                type="button"
+                size="sm"
+                variant={statusFilter === opt.value ? "default" : "outline"}
+                className="rounded-[10px]"
+                onClick={() => setStatusFilter(opt.value as typeof statusFilter)}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+        </div>
         {loadingList ? (
           <div className="grid gap-6 md:grid-cols-2">
             {[1, 2, 3, 4].map((i) => (
@@ -167,9 +213,24 @@ export default function Dashboard() {
             <Upload className="h-12 w-12 text-[var(--color-blue)]" aria-hidden />
             <p className="mt-4 max-w-sm text-[17px] text-[var(--color-secondary)]">No contracts yet. Upload your first contract.</p>
           </div>
+        ) : filteredContracts.length === 0 ? (
+          <div className="rounded-[12px] border border-[var(--color-separator)] bg-[var(--color-surface)] px-6 py-10 text-center">
+            <p className="text-[17px] text-[var(--color-secondary)]">No contracts match your current filters.</p>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2"
+              onClick={() => {
+                setQuery("");
+                setStatusFilter("all");
+              }}
+            >
+              Reset filters
+            </Button>
+          </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2">
-            {contracts.map((c) => (
+            {filteredContracts.map((c) => (
               <ContractCard
                 key={c.id}
                 contract={c}

@@ -26,6 +26,10 @@ ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, 
 3. Under **Storage**, create a **public** bucket named `contracts` (or keep it private and adjust how `file_url` is stored; the backend expects a public URL path segment `/public/contracts/` for deletion).
 4. Under **Project Settings → Database**, copy the **connection string** (URI) for `DATABASE_URL` (use the direct connection or pooler as you prefer; add `?sslmode=require` if required).
 
+## Auth setup
+
+Email/password works out of the box with Supabase Auth.
+
 ## Environment variables
 
 ### Frontend (`frontend/.env`)
@@ -46,6 +50,11 @@ ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, 
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key; used for Storage uploads and deletes only |
 | `DATABASE_URL` | Postgres connection string (Supabase) |
 | `CORS_ORIGINS` | Comma-separated list of allowed browser origins (e.g. your Vercel URL), or `*` for open testing (cookies not used with `*`) |
+| `APP_ENV` | `development` or `production` (enables stricter headers in production) |
+| `RATE_LIMIT_UPLOADS_PER_MINUTE` | Per-user upload rate limit |
+| `RATE_LIMIT_ANALYSIS_PER_MINUTE` | Per-user analysis rate limit |
+| `CONTRACT_TEXT_PERSISTENCE_ENABLED` | Whether parsed contract text is stored in DB |
+| `CONTRACT_TEXT_RETENTION_DAYS` | Days before stored raw text is automatically nulled |
 
 Never commit real keys. Copy from `.env.example` files in each package.
 
@@ -103,11 +112,22 @@ After deploy, create a free cron job:
 
 This reduces cold starts on Render’s free tier.
 
+## Pre-deploy regression checklist
+
+- Sign up with email/password and complete onboarding.
+- Sign in with email/password and confirm redirect lands on dashboard.
+- Upload PDF and DOCX files under 10 MB and confirm analysis renders.
+- Confirm existing contracts remain visible after sign out/in.
+- Verify delete removes both DB row and storage object.
+- Verify API health endpoint returns `{"status":"ok"}` after deploy.
+- Ensure production `CORS_ORIGINS` is explicit (not `*`).
+
 ## Security notes
 
 - All Gemini calls run **only** on the backend.
 - Row Level Security in Supabase protects tables when accessed with the anon key; the app’s contract CRUD goes through the API using the user JWT and Postgres via `DATABASE_URL` (typically bypasses RLS as the database role).
 - JWTs are validated by calling Supabase Auth’s `GET /auth/v1/user` with the caller’s bearer token.
+- Rotate keys immediately if exposed. Update `backend/.env`, host provider env vars, and Supabase provider secrets at the same time to avoid outage.
 
 ## Scripts
 

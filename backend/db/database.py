@@ -48,6 +48,7 @@ class ContractRow(Base):
     id = Column(PGUUID(as_uuid=True), primary_key=True)
     user_id = Column(PGUUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False)
     file_name = Column(Text, nullable=False)
+    storage_path = Column(Text, nullable=True)
     file_url = Column(Text, nullable=True)
     raw_text = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)

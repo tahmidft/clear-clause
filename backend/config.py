@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     database_url: str = ""
     cors_origins: str = "*"
+    app_env: str = "development"
+    rate_limit_uploads_per_minute: int = 20
+    rate_limit_analysis_per_minute: int = 30
+    contract_text_retention_days: int = 30
+    contract_text_persistence_enabled: bool = True
 
 
 @lru_cache

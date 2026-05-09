@@ -43,6 +43,7 @@ class ContractSummary(BaseModel):
     id: UUID
     user_id: UUID
     file_name: str
+    storage_path: str | None = None
     file_url: str | None
     created_at: datetime | None = None
 
@@ -51,6 +52,7 @@ class ContractUploadResponse(BaseModel):
     id: UUID
     user_id: UUID
     file_name: str
+    storage_path: str | None = None
     file_url: str | None
     created_at: datetime | None = None
 
