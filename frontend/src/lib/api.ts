@@ -53,26 +53,42 @@ async function requestJson<T>(
     throw new ApiError("The app is not configured with an API URL.", 500);
   }
 
-  let res: Response;
-  try {
-    const headers = new Headers(init.headers);
-    if (!headers.has("Authorization") && !path.endsWith("/health")) {
-      const auth = await authHeaders();
-      Object.entries(auth).forEach(([k, v]) => headers.set(k, String(v)));
-    }
-    res = await fetch(`${base}${path}`, {
-      ...init,
-      headers,
-      signal: options.signal,
-    });
-  } catch {
-    if (!options.skipErrorToast) {
-      toast({
-        title: "Connection issue",
-        description: friendlyMessage(0, true),
-        variant: "destructive",
+  const retries = (init.method ?? "GET").toUpperCase() === "GET" ? 2 : 0;
+  let attempt = 0;
+  let res: Response | null = null;
+  while (attempt <= retries) {
+    const timeout = new AbortController();
+    const timer = window.setTimeout(() => timeout.abort(), 15000);
+    try {
+      const headers = new Headers(init.headers);
+      if (!headers.has("Authorization") && !path.endsWith("/health")) {
+        const auth = await authHeaders();
+        Object.entries(auth).forEach(([k, v]) => headers.set(k, String(v)));
+      }
+      res = await fetch(`${base}${path}`, {
+        ...init,
+        headers,
+        signal: options.signal ?? timeout.signal,
       });
+      window.clearTimeout(timer);
+      break;
+    } catch {
+      window.clearTimeout(timer);
+      if (attempt === retries) {
+        if (!options.skipErrorToast) {
+          toast({
+            title: "Connection issue",
+            description: friendlyMessage(0, true),
+            variant: "destructive",
+          });
+        }
+        throw new ApiError(friendlyMessage(0, true), 0);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+      attempt += 1;
     }
+  }
+  if (!res) {
     throw new ApiError(friendlyMessage(0, true), 0);
   }
 
@@ -90,17 +106,9 @@ async function requestJson<T>(
 
   if (!res.ok) {
     if (res.status >= 500 && !options.skipErrorToast) {
-      toast({
-        title: "Server error",
-        description: friendlyMessage(res.status, false),
-        variant: "destructive",
-      });
+      toast({ title: "Server error", description: friendlyMessage(res.status, false), variant: "destructive" });
     } else if (res.status >= 400 && res.status !== 404 && !options.skipErrorToast) {
-      toast({
-        title: "Request failed",
-        description: friendlyMessage(res.status, false),
-        variant: "destructive",
-      });
+      toast({ title: "Request failed", description: friendlyMessage(res.status, false), variant: "destructive" });
     }
     throw new ApiError(friendlyMessage(res.status, false), res.status);
   }

@@ -17,6 +17,7 @@ export interface Contract {
   id: string;
   user_id: string;
   file_name: string;
+  storage_path?: string | null;
   file_url: string | null;
   created_at: string;
   analysis?: Analysis | null;
