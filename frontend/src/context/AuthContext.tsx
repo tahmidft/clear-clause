@@ -53,11 +53,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (password.length < 8) {
       return { error: "Password must be at least 8 characters." };
     }
-    const { error } = await supabase.auth.signUp({
-      email: trimmed,
-      password,
-    });
-    return { error: error?.message ?? null };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: trimmed,
+        password,
+      });
+      if (!error) return { error: null };
+      const msg = error.message?.trim();
+      return {
+        error:
+          msg ||
+          "Sign up failed with no message from the server. Confirm VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in frontend/.env.",
+      };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      return { error: message || "Sign up failed unexpectedly." };
+    }
   }, []);
 
   const signOut = React.useCallback(async () => {
