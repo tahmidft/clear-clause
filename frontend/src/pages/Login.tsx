@@ -10,16 +10,25 @@ import { getPreferences } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
 export default function Login() {
-  const { signIn, signOut, user, loading } = useAuth();
+  const { signIn, resendConfirmation, signOut, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? "/dashboard";
+  const prefilledEmail = (location.state as { email?: string } | null)?.email ?? "";
 
-  const [email, setEmail] = React.useState("");
+  const [email, setEmail] = React.useState(prefilledEmail);
   const [password, setPassword] = React.useState("");
   const [emailError, setEmailError] = React.useState("");
   const [passwordError, setPasswordError] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = React.useState(false);
+  const [resending, setResending] = React.useState(false);
+
+  React.useEffect(() => {
+    if (prefilledEmail) {
+      setEmail(prefilledEmail);
+    }
+  }, [prefilledEmail]);
 
   if (loading) {
     return (
@@ -81,9 +90,12 @@ export default function Login() {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
+    setNeedsConfirmation(false);
     const { error } = await signIn(email, password);
     if (error) {
-      setPasswordError("Those details do not match our records. Try again.");
+      const unconfirmed = /confirm your email/i.test(error);
+      setNeedsConfirmation(unconfirmed);
+      setPasswordError(error);
       setSubmitting(false);
       return;
     }
@@ -149,6 +161,30 @@ export default function Login() {
               <p id="pw-err" className="mt-1 text-sm text-[var(--color-red)]" role="alert">
                 {passwordError}
               </p>
+            ) : null}
+            {needsConfirmation ? (
+              <div className="mt-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-10 w-full rounded-[10px] text-[15px]"
+                  disabled={resending}
+                  aria-busy={resending}
+                  onClick={async () => {
+                    setResending(true);
+                    const { error: resendError } = await resendConfirmation(email);
+                    if (resendError) {
+                      setPasswordError(resendError);
+                    } else {
+                      setPasswordError("Confirmation email sent. Check your inbox and spam folder.");
+                      setNeedsConfirmation(false);
+                    }
+                    setResending(false);
+                  }}
+                >
+                  {resending ? "Sending..." : "Resend confirmation email"}
+                </Button>
+              </div>
             ) : null}
           </div>
           <Button type="submit" className="min-h-11 w-full rounded-[10px] text-[17px]" disabled={submitting} aria-busy={submitting}>
