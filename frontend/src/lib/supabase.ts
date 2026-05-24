@@ -14,3 +14,9 @@ export const supabase = createClient(url ?? "", anonKey ?? "", {
     detectSessionInUrl: true,
   },
 });
+
+/** Post-confirmation redirect target; must be allowed in Supabase URL configuration. */
+export function authRedirectUrl(path = "/login"): string {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}${path}`;
+}

@@ -1,16 +1,15 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, MailCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 
 export default function Signup() {
-  const { signUp, signOut, user, loading } = useAuth();
+  const { signUp, resendConfirmation, signOut, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = React.useState("");
@@ -18,6 +17,8 @@ export default function Signup() {
   const [emailError, setEmailError] = React.useState("");
   const [passwordError, setPasswordError] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [confirmationPending, setConfirmationPending] = React.useState<string | null>(null);
+  const [resending, setResending] = React.useState(false);
 
   if (loading) {
     return (
@@ -57,6 +58,73 @@ export default function Signup() {
     );
   }
 
+  if (confirmationPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4 py-12">
+        <Card className="w-full max-w-md rounded-[12px] border border-[var(--color-separator)] bg-[var(--color-surface)] p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-blue)]/10">
+            <MailCheck className="h-7 w-7 text-[var(--color-blue)]" aria-hidden />
+          </div>
+          <h1 className="text-center font-display text-[34px] font-semibold">Check your email</h1>
+          <p className="mt-3 text-center text-[17px] text-[var(--color-secondary)]">
+            We sent a confirmation link to{" "}
+            <span className="break-all font-medium text-[var(--color-label)]">{confirmationPending}</span>.
+          </p>
+          <p className="mt-3 text-center text-[17px] text-[var(--color-secondary)]">
+            Open the link to activate your account, then sign in. If you do not see it within a few minutes, check spam
+            or resend below.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <Button
+              type="button"
+              className="min-h-11 w-full rounded-[10px] text-[17px]"
+              onClick={() => navigate("/login", { replace: true, state: { email: confirmationPending } })}
+            >
+              Go to sign in
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full rounded-[10px] text-[17px]"
+              disabled={resending}
+              aria-busy={resending}
+              onClick={async () => {
+                setResending(true);
+                const { error } = await resendConfirmation(confirmationPending);
+                if (error) {
+                  toast({
+                    title: "Could not resend email",
+                    description: error,
+                    variant: "destructive",
+                  });
+                } else {
+                  toast({
+                    title: "Confirmation email sent",
+                    description: "Check your inbox and spam folder.",
+                  });
+                }
+                setResending(false);
+              }}
+            >
+              {resending ? "Sending..." : "Resend confirmation email"}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-11 w-full rounded-[10px] text-[17px]"
+              onClick={() => {
+                setConfirmationPending(null);
+                setPassword("");
+              }}
+            >
+              Use a different email
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const validate = (): boolean => {
     let ok = true;
     setEmailError("");
@@ -79,27 +147,23 @@ export default function Signup() {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    const { error } = await signUp(email, password);
-    if (error) {
+    const result = await signUp(email, password);
+    if (result.error) {
       toast({
         title: "Could not create account",
-        description: error,
+        description: result.error,
         variant: "destructive",
       });
       setSubmitting(false);
       return;
     }
-    const { data } = await supabase.auth.getSession();
-    if (data.session) {
-      toast({ title: "Account ready", description: "Tell us your preferences next." });
-      navigate("/onboarding", { replace: true });
-    } else {
-      toast({
-        title: "Check your inbox",
-        description: "Confirm your email, then sign in to continue.",
-      });
-      navigate("/login", { replace: true });
+    if (result.needsEmailConfirmation) {
+      setConfirmationPending(result.email ?? email.trim());
+      setSubmitting(false);
+      return;
     }
+    toast({ title: "Account ready", description: "Tell us your preferences next." });
+    navigate("/onboarding", { replace: true });
     setSubmitting(false);
   };
 

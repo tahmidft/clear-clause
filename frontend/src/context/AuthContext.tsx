@@ -1,13 +1,32 @@
 import type { Session, User } from "@supabase/supabase-js";
 import * as React from "react";
-import { supabase } from "@/lib/supabase";
+import { authRedirectUrl, supabase } from "@/lib/supabase";
+
+export interface AuthActionResult {
+  error: string | null;
+}
+
+export interface SignUpResult extends AuthActionResult {
+  needsEmailConfirmation: boolean;
+  email: string | null;
+}
+
+function mapSignInError(message: string | undefined): string {
+  const msg = message?.trim() ?? "";
+  if (/email not confirmed/i.test(msg)) {
+    return "Confirm your email first. Check your inbox and spam folder, then try again.";
+  }
+  if (msg) return msg;
+  return "Those details do not match our records. Try again.";
+}
 
 interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signIn: (email: string, password: string) => Promise<AuthActionResult>;
+  signUp: (email: string, password: string) => Promise<SignUpResult>;
+  resendConfirmation: (email: string) => Promise<AuthActionResult>;
   signOut: () => Promise<void>;
 }
 
@@ -42,33 +61,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email: trimmed,
       password,
     });
-    return { error: error?.message ?? null };
+    return { error: error ? mapSignInError(error.message) : null };
   }, []);
 
-  const signUp = React.useCallback(async (email: string, password: string) => {
+  const signUp = React.useCallback(async (email: string, password: string): Promise<SignUpResult> => {
     const trimmed = email.trim();
     if (!trimmed || !password) {
-      return { error: "Enter your email and password." };
+      return { error: "Enter your email and password.", needsEmailConfirmation: false, email: null };
     }
     if (password.length < 8) {
-      return { error: "Password must be at least 8 characters." };
+      return { error: "Password must be at least 8 characters.", needsEmailConfirmation: false, email: null };
     }
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: trimmed,
         password,
+        options: {
+          emailRedirectTo: authRedirectUrl("/login"),
+        },
       });
-      if (!error) return { error: null };
-      const msg = error.message?.trim();
-      return {
-        error:
-          msg ||
-          "Sign up failed with no message from the server. Confirm VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in frontend/.env.",
-      };
+      if (error) {
+        const msg = error.message?.trim();
+        return {
+          error:
+            msg ||
+            "Sign up failed with no message from the server. Confirm VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in frontend/.env.",
+          needsEmailConfirmation: false,
+          email: null,
+        };
+      }
+      const needsEmailConfirmation = !data.session && !!data.user;
+      return { error: null, needsEmailConfirmation, email: trimmed };
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      return { error: message || "Sign up failed unexpectedly." };
+      return {
+        error: message || "Sign up failed unexpectedly.",
+        needsEmailConfirmation: false,
+        email: null,
+      };
     }
+  }, []);
+
+  const resendConfirmation = React.useCallback(async (email: string) => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      return { error: "Enter your email address." };
+    }
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: trimmed,
+      options: {
+        emailRedirectTo: authRedirectUrl("/login"),
+      },
+    });
+    return { error: error?.message ?? null };
   }, []);
 
   const signOut = React.useCallback(async () => {
@@ -82,9 +128,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       signIn,
       signUp,
+      resendConfirmation,
       signOut,
     }),
-    [session, loading, signIn, signUp, signOut],
+    [session, loading, signIn, signUp, resendConfirmation, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

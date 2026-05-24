@@ -30,14 +30,19 @@ ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, 
 
 Email/password works out of the box with Supabase Auth.
 
-### If signup fails locally
+### If signup fails or “no confirmation email”
 
-The signup screen now shows Supabase’s error text in the toast. Common fixes:
+The signup screen shows Supabase errors in a toast. When **Confirm email** is enabled, signup succeeds without a session: you’ll see **Check your email** and must confirm before sign-in.
 
-1. **Authentication → Providers → Email**: ensure **Confirm email** / **Enable email signup** match what you want; if confirmations are required, the account may still be created but you must confirm before sign-in.
-2. **Authentication → URL configuration**: set **Site URL** to your app origin (e.g. `http://127.0.0.1:5173` for local Vite).
-3. **`VITE_SUPABASE_ANON_KEY`**: use the **anon (public)** JWT from **Project Settings → API** (`eyJ…`). If your dashboard only shows newer **publishable** keys, use the key Supabase documents as safe for the browser; mismatched or secret keys cause “Invalid API key” style errors.
-4. **Duplicate email**: use a different email or sign in instead.
+Common fixes:
+
+1. **Authentication → Providers → Email**: enable signup; **Confirm email** ON for production, OFF only for local/demo if you want instant sign-in without mail.
+2. **Authentication → URL configuration**: **Site URL** and **Redirect URLs** must include your app origin (local: `http://127.0.0.1:5173/**`; production: your Vercel URL + `/**`).
+3. **SMTP**: default Supabase mail is rate-limited and often goes to spam—configure custom SMTP for production (see `.cursor/skills/supabase/SKILL.md`).
+4. **`VITE_SUPABASE_ANON_KEY`**: use the **anon (public)** key from **Project Settings → API**; never the service role key.
+5. **Duplicate email**: sign in instead of signing up again.
+
+**Demo without email:** turn off **Confirm email** in the Supabase dashboard; users can sign up and use the app immediately.
 
 ## Environment variables
 
