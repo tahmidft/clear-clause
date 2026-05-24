@@ -2,7 +2,34 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import type { Analysis, Contract, Preference, PreferenceRecord } from "@/types";
 
-const API_BASE = () => (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+function devApiProxyEnabled(): boolean {
+  return (
+    import.meta.env.DEV &&
+    import.meta.env.MODE !== "test" &&
+    import.meta.env.VITE_DEV_API_PROXY !== "false"
+  );
+}
+
+/** Same-origin `/api/...` in local dev (Vite proxy), or absolute `VITE_API_URL` elsewhere. */
+function apiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  if (devApiProxyEnabled()) {
+    return `/api${p}`;
+  }
+  const base = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+  if (!base) {
+    throw new ApiError("The app is not configured with an API URL.", 500);
+  }
+  return `${base}${p}`;
+}
+
+/** True when the app can issue API requests (dev proxy or configured base URL). */
+export function isApiConfigured(): boolean {
+  if (devApiProxyEnabled()) {
+    return true;
+  }
+  return !!(import.meta.env.VITE_API_URL ?? "").trim();
+}
 
 export class ApiError extends Error {
   constructor(
@@ -33,6 +60,34 @@ function friendlyMessage(status: number, isNetwork: boolean): string {
   return "Something went wrong. Please try again.";
 }
 
+async function readFastApiErrorDetail(res: Response): Promise<string | undefined> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("json")) return undefined;
+  try {
+    const data = (await res.json()) as { detail?: unknown };
+    if (typeof data.detail === "string") return data.detail;
+    if (Array.isArray(data.detail)) {
+      return data.detail
+        .map((item) => {
+          if (item && typeof item === "object" && "msg" in item) {
+            return String((item as { msg: string }).msg);
+          }
+          return JSON.stringify(item);
+        })
+        .join(" ");
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+async function errorDescriptionFromResponse(res: Response): Promise<string> {
+  const detail = (await readFastApiErrorDetail(res))?.trim();
+  if (detail) return detail;
+  return friendlyMessage(res.status, false);
+}
+
 async function authHeaders(): Promise<HeadersInit> {
   const { data, error } = await supabase.auth.getSession();
   if (error || !data.session?.access_token) {
@@ -48,11 +103,6 @@ async function requestJson<T>(
   init: RequestInit = {},
   options: { skipErrorToast?: boolean; signal?: AbortSignal } = {},
 ): Promise<T> {
-  const base = API_BASE();
-  if (!base) {
-    throw new ApiError("The app is not configured with an API URL.", 500);
-  }
-
   const retries = (init.method ?? "GET").toUpperCase() === "GET" ? 2 : 0;
   let attempt = 0;
   let res: Response | null = null;
@@ -65,7 +115,7 @@ async function requestJson<T>(
         const auth = await authHeaders();
         Object.entries(auth).forEach(([k, v]) => headers.set(k, String(v)));
       }
-      res = await fetch(`${base}${path}`, {
+      res = await fetch(apiUrl(path), {
         ...init,
         headers,
         signal: options.signal ?? timeout.signal,
@@ -105,12 +155,19 @@ async function requestJson<T>(
   }
 
   if (!res.ok) {
-    if (res.status >= 500 && !options.skipErrorToast) {
-      toast({ title: "Server error", description: friendlyMessage(res.status, false), variant: "destructive" });
-    } else if (res.status >= 400 && res.status !== 404 && !options.skipErrorToast) {
-      toast({ title: "Request failed", description: friendlyMessage(res.status, false), variant: "destructive" });
+    const description = await errorDescriptionFromResponse(res);
+    if (!options.skipErrorToast) {
+      if (res.status >= 500) {
+        toast({
+          title: res.status === 503 ? "Service unavailable" : "Server error",
+          description,
+          variant: "destructive",
+        });
+      } else if (res.status >= 400 && res.status !== 404) {
+        toast({ title: "Request failed", description, variant: "destructive" });
+      }
     }
-    throw new ApiError(friendlyMessage(res.status, false), res.status);
+    throw new ApiError(description, res.status);
   }
 
   if (res.status === 204) {
@@ -121,14 +178,13 @@ async function requestJson<T>(
 }
 
 export async function uploadContract(file: File): Promise<Contract> {
-  const base = API_BASE();
   const { data, error } = await supabase.auth.getSession();
   if (error || !data.session?.access_token) {
     throw new ApiError("You need to be signed in to continue.", 401);
   }
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${base}/contracts/upload`, {
+  const res = await fetch(apiUrl("/contracts/upload"), {
     method: "POST",
     headers: { Authorization: `Bearer ${data.session.access_token}` },
     body: fd,
@@ -143,12 +199,13 @@ export async function uploadContract(file: File): Promise<Contract> {
     throw new ApiError(friendlyMessage(res.status, false), res.status);
   }
   if (!res.ok) {
+    const description = await errorDescriptionFromResponse(res);
     toast({
       title: "Upload failed",
-      description: friendlyMessage(res.status, false),
+      description,
       variant: "destructive",
     });
-    throw new ApiError(friendlyMessage(res.status, false), res.status);
+    throw new ApiError(description, res.status);
   }
   const json = (await res.json()) as Contract;
   return json;
@@ -197,11 +254,10 @@ export async function getPreferences(): Promise<PreferenceRecord | null> {
 }
 
 export async function pingHealth(signal?: AbortSignal): Promise<void> {
-  const base = API_BASE();
-  if (!base) {
+  if (!isApiConfigured()) {
     throw new Error("No API URL");
   }
-  const res = await fetch(`${base}/health`, { method: "GET", signal });
+  const res = await fetch(apiUrl("/health"), { method: "GET", signal });
   if (!res.ok) {
     throw new Error("Health check failed");
   }

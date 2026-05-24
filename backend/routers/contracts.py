@@ -3,9 +3,11 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from db.database import ContractRow, get_db
+from db_errors import raise_http_from_sqlalchemy
 from config import get_settings
 from deps import get_current_user_id
 from models.schemas import ContractSummary, ContractUploadResponse
@@ -132,13 +134,16 @@ def list_contracts(
 ) -> list[ContractSummary]:
     settings = get_settings()
     uid = UUID(user_id)
-    _apply_text_retention(db, uid, settings.contract_text_retention_days)
-    rows = (
-        db.query(ContractRow)
-        .filter(ContractRow.user_id == uid)
-        .order_by(ContractRow.created_at.desc())
-        .all()
-    )
+    try:
+        _apply_text_retention(db, uid, settings.contract_text_retention_days)
+        rows = (
+            db.query(ContractRow)
+            .filter(ContractRow.user_id == uid)
+            .order_by(ContractRow.created_at.desc())
+            .all()
+        )
+    except (OperationalError, ProgrammingError, SQLAlchemyError) as exc:
+        raise_http_from_sqlalchemy(exc, context="loading contracts")
     return [
         ContractSummary(
             id=r.id,

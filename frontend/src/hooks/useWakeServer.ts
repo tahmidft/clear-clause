@@ -1,5 +1,5 @@
 import * as React from "react";
-import { pingHealth } from "@/lib/api";
+import { isApiConfigured, pingHealth } from "@/lib/api";
 
 /**
  * On mount, pings GET /health. If the request takes longer than 2s, `isWaking` is true until it completes.
@@ -8,8 +8,7 @@ export function useWakeServer(): { isWaking: boolean } {
   const [isWaking, setIsWaking] = React.useState(false);
 
   React.useEffect(() => {
-    const base = import.meta.env.VITE_API_URL;
-    if (!base) {
+    if (!isApiConfigured()) {
       return;
     }
 

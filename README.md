@@ -30,6 +30,15 @@ ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, 
 
 Email/password works out of the box with Supabase Auth.
 
+### If signup fails locally
+
+The signup screen now shows Supabase’s error text in the toast. Common fixes:
+
+1. **Authentication → Providers → Email**: ensure **Confirm email** / **Enable email signup** match what you want; if confirmations are required, the account may still be created but you must confirm before sign-in.
+2. **Authentication → URL configuration**: set **Site URL** to your app origin (e.g. `http://127.0.0.1:5173` for local Vite).
+3. **`VITE_SUPABASE_ANON_KEY`**: use the **anon (public)** JWT from **Project Settings → API** (`eyJ…`). If your dashboard only shows newer **publishable** keys, use the key Supabase documents as safe for the browser; mismatched or secret keys cause “Invalid API key” style errors.
+4. **Duplicate email**: use a different email or sign in instead.
+
 ## Environment variables
 
 ### Frontend (`frontend/.env`)

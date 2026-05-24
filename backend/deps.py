@@ -28,8 +28,8 @@ def get_current_user_id(
     s = get_settings()
     if not s.supabase_url or not s.supabase_anon_key:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server authentication is not configured",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Backend auth is not configured: set SUPABASE_URL and SUPABASE_ANON_KEY in backend/.env to the same Supabase project as the frontend.",
         )
     url = f"{s.supabase_url.rstrip('/')}/auth/v1/user"
     try:

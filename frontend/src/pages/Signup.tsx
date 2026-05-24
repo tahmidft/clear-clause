@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 
 export default function Signup() {
-  const { signUp, user, loading } = useAuth();
+  const { signUp, signOut, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = React.useState("");
@@ -18,11 +19,43 @@ export default function Signup() {
   const [passwordError, setPasswordError] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!loading && user) {
-      void navigate("/dashboard", { replace: true });
-    }
-  }, [user, loading, navigate]);
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)]" role="status" aria-live="polite" aria-label="Loading">
+        <Loader2 className="h-10 w-10 animate-spin text-[var(--color-blue)]" aria-hidden />
+      </div>
+    );
+  }
+
+  if (user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg)] px-4 py-12">
+        <Card className="w-full max-w-md rounded-[12px] border border-[var(--color-separator)] bg-[var(--color-surface)] p-8 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+          <h1 className="text-center font-display text-[34px] font-semibold">You&apos;re already signed in</h1>
+          <p className="mt-3 break-all text-center text-[17px] text-[var(--color-secondary)]">{user.email}</p>
+          <p className="mt-4 text-center text-[17px] text-[var(--color-secondary)]">
+            To create a new account, sign out first. Otherwise continue to your dashboard.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <Button type="button" className="min-h-11 w-full rounded-[10px] text-[17px]" onClick={() => void navigate("/dashboard", { replace: true })}>
+              Go to dashboard
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 w-full rounded-[10px] text-[17px]"
+              onClick={async () => {
+                await signOut();
+                navigate("/signup", { replace: true });
+              }}
+            >
+              Sign out
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const validate = (): boolean => {
     let ok = true;
@@ -50,7 +83,7 @@ export default function Signup() {
     if (error) {
       toast({
         title: "Could not create account",
-        description: "Please check your details and try again.",
+        description: error,
         variant: "destructive",
       });
       setSubmitting(false);

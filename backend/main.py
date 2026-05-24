@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
+from cors_helpers import with_loopback_aliases
 from config import get_settings
 from routers import analysis, contracts, preferences
 
@@ -12,7 +13,7 @@ if _origins == "*":
     allow_origins = ["*"]
     allow_credentials = False
 else:
-    allow_origins = [o.strip() for o in _origins.split(",") if o.strip()]
+    allow_origins = with_loopback_aliases([o.strip() for o in _origins.split(",") if o.strip()])
     allow_credentials = True
 
 app.add_middleware(
