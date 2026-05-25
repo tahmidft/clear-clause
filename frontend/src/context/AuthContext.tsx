@@ -27,6 +27,8 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<AuthActionResult>;
   signUp: (email: string, password: string) => Promise<SignUpResult>;
   resendConfirmation: (email: string) => Promise<AuthActionResult>;
+  resetPassword: (email: string) => Promise<AuthActionResult>;
+  updatePassword: (newPassword: string) => Promise<AuthActionResult>;
   signOut: () => Promise<void>;
 }
 
@@ -90,6 +92,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: null,
         };
       }
+      // Supabase returns a stub user (empty identities) for duplicate emails to prevent enumeration.
+      if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+        return {
+          error:
+            "An account with this email already exists. Sign in instead, or use password reset if you forgot your password.",
+          needsEmailConfirmation: false,
+          email: null,
+        };
+      }
       const needsEmailConfirmation = !data.session && !!data.user;
       return { error: null, needsEmailConfirmation, email: trimmed };
     } catch (e) {
@@ -117,6 +128,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   }, []);
 
+  const resetPassword = React.useCallback(async (email: string): Promise<AuthActionResult> => {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      return { error: "Enter your email address." };
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, {
+      redirectTo: authRedirectUrl("/update-password"),
+    });
+    return { error: error?.message ?? null };
+  }, []);
+
+  const updatePassword = React.useCallback(async (newPassword: string): Promise<AuthActionResult> => {
+    if (!newPassword || newPassword.length < 8) {
+      return { error: "Password must be at least 8 characters." };
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    return { error: error?.message ?? null };
+  }, []);
+
   const signOut = React.useCallback(async () => {
     await supabase.auth.signOut();
   }, []);
@@ -129,9 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       resendConfirmation,
+      resetPassword,
+      updatePassword,
       signOut,
     }),
-    [session, loading, signIn, signUp, resendConfirmation, signOut],
+    [session, loading, signIn, signUp, resendConfirmation, resetPassword, updatePassword, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
