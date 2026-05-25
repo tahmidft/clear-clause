@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: proxyTarget,
           changeOrigin: true,
+          // Gemini analysis can take 30–90s; default proxy timeouts are too short.
+          timeout: 120_000,
+          proxyTimeout: 120_000,
           rewrite: (p) => {
             const rest = p.slice("/api".length);
             return rest.length > 0 ? rest : "/";

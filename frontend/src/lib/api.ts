@@ -98,17 +98,21 @@ async function authHeaders(): Promise<HeadersInit> {
   };
 }
 
+const DEFAULT_TIMEOUT_MS = 15_000;
+const ANALYSIS_TIMEOUT_MS = 120_000;
+
 async function requestJson<T>(
   path: string,
   init: RequestInit = {},
-  options: { skipErrorToast?: boolean; signal?: AbortSignal } = {},
+  options: { skipErrorToast?: boolean; signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<T> {
   const retries = (init.method ?? "GET").toUpperCase() === "GET" ? 2 : 0;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let attempt = 0;
   let res: Response | null = null;
   while (attempt <= retries) {
     const timeout = new AbortController();
-    const timer = window.setTimeout(() => timeout.abort(), 15000);
+    const timer = window.setTimeout(() => timeout.abort(), timeoutMs);
     try {
       const headers = new Headers(init.headers);
       if (!headers.has("Authorization") && !path.endsWith("/health")) {
@@ -122,17 +126,21 @@ async function requestJson<T>(
       });
       window.clearTimeout(timer);
       break;
-    } catch {
+    } catch (err) {
       window.clearTimeout(timer);
       if (attempt === retries) {
+        const aborted = err instanceof DOMException && err.name === "AbortError";
+        const description = aborted
+          ? "The request took too long. Contract analysis can take up to a minute — try again."
+          : friendlyMessage(0, true);
         if (!options.skipErrorToast) {
           toast({
-            title: "Connection issue",
-            description: friendlyMessage(0, true),
+            title: aborted ? "Request timed out" : "Connection issue",
+            description,
             variant: "destructive",
           });
         }
-        throw new ApiError(friendlyMessage(0, true), 0);
+        throw new ApiError(description, 0);
       }
       await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
       attempt += 1;
@@ -220,7 +228,11 @@ export async function deleteContract(id: string): Promise<void> {
 }
 
 export async function analyzeContract(contractId: string): Promise<Analysis> {
-  return requestJson<Analysis>(`/analysis/${contractId}`, { method: "POST" });
+  return requestJson<Analysis>(
+    `/analysis/${contractId}`,
+    { method: "POST" },
+    { timeoutMs: ANALYSIS_TIMEOUT_MS },
+  );
 }
 
 export async function getAnalysis(contractId: string): Promise<Analysis | null> {

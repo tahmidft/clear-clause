@@ -10,25 +10,71 @@ import { usePreferences } from "@/context/PreferencesContext";
 import { savePreferences } from "@/lib/api";
 import type { Preference } from "@/types";
 
+function PrefRow({
+  title,
+  description,
+  checked,
+  onCheckedChange,
+  ariaLabel,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (v: boolean) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-[10px] p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      style={{ border: "0.5px solid var(--cc-pref-row-border)", background: "var(--cc-pref-row-bg)" }}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-medium" style={{ color: "var(--cc-body)" }}>{title}</p>
+        <p className="text-[13px]" style={{ color: "var(--cc-muted)" }}>{description}</p>
+      </div>
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        aria-label={ariaLabel}
+        className="h-7 w-11 shrink-0 self-start sm:self-center"
+      />
+    </div>
+  );
+}
+
 export default function Settings() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { preferences, loading, refresh } = usePreferences();
 
   const [paymentTermsDays, setPaymentTermsDays] = React.useState(30);
+  const [requiresDeposit, setRequiresDeposit] = React.useState(true);
+  const [minDepositPercent, setMinDepositPercent] = React.useState(25);
   const [ipOwnership, setIpOwnership] = React.useState(true);
+  const [writtenScopeRequired, setWrittenScopeRequired] = React.useState(true);
   const [unpaidRevisions, setUnpaidRevisions] = React.useState(false);
+  const [maxRevisionRounds, setMaxRevisionRounds] = React.useState(3);
   const [nonCompete, setNonCompete] = React.useState(false);
   const [terminationNoticeDays, setTerminationNoticeDays] = React.useState(14);
+  const [liabilityCapRequired, setLiabilityCapRequired] = React.useState(true);
+  const [acceptsBroadIndemnification, setAcceptsBroadIndemnification] = React.useState(false);
+  const [killFeeRequired, setKillFeeRequired] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
 
   React.useEffect(() => {
     if (preferences) {
       setPaymentTermsDays(preferences.payment_terms_days);
+      setRequiresDeposit(preferences.requires_deposit);
+      setMinDepositPercent(preferences.min_deposit_percent);
       setIpOwnership(preferences.ip_ownership);
+      setWrittenScopeRequired(preferences.written_scope_required);
       setUnpaidRevisions(preferences.unpaid_revisions);
+      setMaxRevisionRounds(preferences.max_revision_rounds);
       setNonCompete(preferences.non_compete);
       setTerminationNoticeDays(preferences.termination_notice_days);
+      setLiabilityCapRequired(preferences.liability_cap_required);
+      setAcceptsBroadIndemnification(preferences.accepts_broad_indemnification);
+      setKillFeeRequired(preferences.kill_fee_required);
     }
   }, [preferences]);
 
@@ -39,6 +85,13 @@ export default function Settings() {
       ip_ownership: ipOwnership,
       non_compete: nonCompete,
       termination_notice_days: terminationNoticeDays,
+      max_revision_rounds: maxRevisionRounds,
+      requires_deposit: requiresDeposit,
+      min_deposit_percent: minDepositPercent,
+      liability_cap_required: liabilityCapRequired,
+      accepts_broad_indemnification: acceptsBroadIndemnification,
+      kill_fee_required: killFeeRequired,
+      written_scope_required: writtenScopeRequired,
     };
     setSaving(true);
     try {
@@ -51,89 +104,111 @@ export default function Settings() {
     }
   };
 
+  const cardStyle: React.CSSProperties = {
+    background: "var(--cc-card-bg)",
+    border: "0.5px solid var(--cc-card-border)",
+    borderRadius: 14,
+    padding: "20px",
+  };
+
+  const sectionH2 = (text: string) => (
+    <h2 className="font-semibold tracking-tight" style={{ fontSize: 15, color: "var(--cc-title)" }}>{text}</h2>
+  );
+
+  const sliderLabel = (text: string) => (
+    <span className="text-[13px] font-medium" style={{ color: "var(--cc-body)" }}>{text}</span>
+  );
+
   return (
-    <div className="mx-auto max-w-2xl space-y-10">
+    <div className="mx-auto min-w-0 max-w-2xl space-y-6">
       <div>
-        <h1 className="font-display text-[34px] font-semibold">Settings</h1>
-        <p className="mt-1 text-[17px] text-[var(--color-secondary)]">Tune how ClearClause compares contracts to your standards.</p>
+        <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--cc-title)" }}>Settings</h1>
+        <p className="mt-1 text-[13px]" style={{ color: "var(--cc-muted)" }}>
+          Tune how ClearClause compares contracts to your standards.
+        </p>
       </div>
 
-      <Card className="space-y-8 rounded-[12px] border border-[var(--color-separator)] bg-[var(--color-surface)] p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
-        <h2 className="font-display text-xl font-semibold">Contract preferences</h2>
+      <div className="space-y-6" style={cardStyle}>
+        {sectionH2("Payment & deposits")}
         {loading && !preferences ? (
-          <p className="text-[var(--color-secondary)]">Loading your preferences...</p>
+          <p className="text-[13px]" style={{ color: "var(--cc-muted)" }}>Loading your preferences…</p>
         ) : (
           <>
             <div>
-              <Label className="text-[17px]">Net {paymentTermsDays} days</Label>
-              <Slider
-                className="mt-3"
-                min={7}
-                max={60}
-                step={1}
-                value={[paymentTermsDays]}
-                onValueChange={(v) => setPaymentTermsDays(v[0] ?? 30)}
-                aria-label="Maximum payment terms in days"
-              />
+              <Label>{sliderLabel(`Net ${paymentTermsDays} days (maximum)`)}</Label>
+              <Slider className="mt-3" min={7} max={60} step={1} value={[paymentTermsDays]} onValueChange={(v) => setPaymentTermsDays(v[0] ?? 30)} aria-label="Maximum payment terms in days" />
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[var(--color-separator)] p-4">
+            <PrefRow title="Require upfront deposit" description="Highlight agreements with no deposit." checked={requiresDeposit} onCheckedChange={setRequiresDeposit} ariaLabel="Require upfront deposit" />
+            {requiresDeposit ? (
               <div>
-                <p className="font-medium">Require IP ownership</p>
-                <p className="text-sm text-[var(--color-secondary)]">Highlight agreements that retain client IP.</p>
+                <Label>{sliderLabel(`Minimum deposit ${minDepositPercent}%`)}</Label>
+                <Slider className="mt-3" min={0} max={100} step={5} value={[minDepositPercent]} onValueChange={(v) => setMinDepositPercent(v[0] ?? 25)} aria-label="Minimum deposit percent" />
               </div>
-              <Switch checked={ipOwnership} onCheckedChange={setIpOwnership} aria-label="Require IP ownership" />
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[var(--color-separator)] p-4">
-              <div>
-                <p className="font-medium">Accept unpaid revisions</p>
-                <p className="text-sm text-[var(--color-secondary)]">Turn off to flag unlimited unpaid rounds.</p>
-              </div>
-              <Switch checked={unpaidRevisions} onCheckedChange={setUnpaidRevisions} aria-label="Accept unpaid revisions" />
-            </div>
-            <div className="flex items-center justify-between gap-4 rounded-[10px] border border-[var(--color-separator)] p-4">
-              <div>
-                <p className="font-medium">Accept non-compete</p>
-                <p className="text-sm text-[var(--color-secondary)]">We will warn on restrictive covenants if disabled.</p>
-              </div>
-              <Switch checked={nonCompete} onCheckedChange={setNonCompete} aria-label="Accept non-compete clauses" />
-            </div>
-            <div>
-              <Label className="text-[17px]">Termination notice {terminationNoticeDays} days</Label>
-              <Slider
-                className="mt-3"
-                min={7}
-                max={60}
-                step={1}
-                value={[terminationNoticeDays]}
-                onValueChange={(v) => setTerminationNoticeDays(v[0] ?? 14)}
-                aria-label="Minimum termination notice in days"
-              />
-            </div>
-            <Button type="button" className="min-h-11 rounded-[10px]" disabled={saving} onClick={onSave} aria-busy={saving}>
-              {saving ? "Saving..." : "Save changes"}
-            </Button>
+            ) : null}
           </>
         )}
-      </Card>
+      </div>
 
-      <Card className="rounded-[12px] border border-[var(--color-separator)] bg-[var(--color-surface)] p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
-        <h2 className="font-display text-xl font-semibold">Account</h2>
-        <p className="mt-4 text-[17px] text-[var(--color-secondary)]">
-          Signed in as <span className="font-medium text-[var(--color-label)]">{user?.email}</span>
+      {preferences ? (
+        <>
+          <div className="space-y-4" style={cardStyle}>
+            {sectionH2("Work product & scope")}
+            <PrefRow title="Require IP ownership" description="Highlight agreements that retain all IP with the client." checked={ipOwnership} onCheckedChange={setIpOwnership} ariaLabel="Require IP ownership" />
+            <PrefRow title="Require written scope of work" description="Flag vague scope or missing SOW." checked={writtenScopeRequired} onCheckedChange={setWrittenScopeRequired} ariaLabel="Require written scope of work" />
+          </div>
+
+          <div className="space-y-4" style={cardStyle}>
+            {sectionH2("Revisions & restrictions")}
+            <PrefRow title="Accept unpaid revisions" description="Turn off to flag unlimited unpaid rounds." checked={unpaidRevisions} onCheckedChange={setUnpaidRevisions} ariaLabel="Accept unpaid revisions" />
+            <div>
+              <Label>{sliderLabel(`Maximum revision rounds: ${maxRevisionRounds}`)}</Label>
+              <Slider className="mt-3" min={0} max={20} step={1} value={[maxRevisionRounds]} onValueChange={(v) => setMaxRevisionRounds(v[0] ?? 3)} aria-label="Maximum revision rounds" />
+            </div>
+            <PrefRow title="Accept non-compete" description="We warn on restrictive covenants if disabled." checked={nonCompete} onCheckedChange={setNonCompete} ariaLabel="Accept non-compete clauses" />
+          </div>
+
+          <div className="space-y-4" style={cardStyle}>
+            {sectionH2("Termination")}
+            <Label>{sliderLabel(`Minimum notice ${terminationNoticeDays} days`)}</Label>
+            <Slider className="mt-3" min={7} max={60} step={1} value={[terminationNoticeDays]} onValueChange={(v) => setTerminationNoticeDays(v[0] ?? 14)} aria-label="Minimum termination notice in days" />
+          </div>
+
+          <div className="space-y-4" style={cardStyle}>
+            {sectionH2("Liability & risk")}
+            <PrefRow title="Require liability cap" description="Flag unlimited contractor liability." checked={liabilityCapRequired} onCheckedChange={setLiabilityCapRequired} ariaLabel="Require liability cap" />
+            <PrefRow title="Accept broad indemnification" description="Turn off to flag one-sided indemnity." checked={acceptsBroadIndemnification} onCheckedChange={setAcceptsBroadIndemnification} ariaLabel="Accept broad indemnification" />
+            <PrefRow title="Require kill fee" description="Flag early termination with no minimum payment." checked={killFeeRequired} onCheckedChange={setKillFeeRequired} ariaLabel="Require kill fee" />
+            <Button type="button" className="min-h-11 rounded-[10px]" disabled={saving} onClick={onSave} aria-busy={saving}>
+              {saving ? "Saving…" : "Save changes"}
+            </Button>
+          </div>
+        </>
+      ) : null}
+
+      <div style={cardStyle}>
+        {sectionH2("Account")}
+        <p className="mt-3 text-[13px]" style={{ color: "var(--cc-muted)" }}>
+          Signed in as{" "}
+          <span className="font-medium" style={{ color: "var(--cc-email-color)" }}>{user?.email}</span>
         </p>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          className="mt-6 min-h-11 rounded-[10px] text-[var(--color-red)] hover:bg-[var(--color-red)]/10 hover:text-[var(--color-red)]"
-          onClick={async () => {
-            await signOut();
-            navigate("/login", { replace: true });
+          className="mt-4 flex items-center gap-2 rounded-[10px] px-4 py-2.5 text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-sign-out-color)]"
+          style={{
+            color: "var(--cc-sign-out-color)",
+            background: "transparent",
+            border: "0.5px solid var(--cc-reject-border)",
+            cursor: "pointer",
+            transition: "background 0.2s ease",
           }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--cc-reject-bg)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          onClick={async () => { await signOut(); navigate("/login", { replace: true }); }}
           aria-label="Sign out of ClearClause"
         >
           Sign out
-        </Button>
-      </Card>
+        </button>
+      </div>
     </div>
   );
 }
