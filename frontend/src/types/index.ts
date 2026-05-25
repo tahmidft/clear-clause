@@ -4,6 +4,13 @@ export interface Preference {
   ip_ownership: boolean;
   non_compete: boolean;
   termination_notice_days: number;
+  max_revision_rounds: number;
+  requires_deposit: boolean;
+  min_deposit_percent: number;
+  liability_cap_required: boolean;
+  accepts_broad_indemnification: boolean;
+  kill_fee_required: boolean;
+  written_scope_required: boolean;
 }
 
 export interface PreferenceRecord extends Preference {
@@ -32,6 +39,8 @@ export interface Section {
   conflicts_with_preference: boolean;
 }
 
+export type ScamRisk = "low" | "medium" | "high";
+
 export interface Analysis {
   id: string;
   contract_id: string;
@@ -40,6 +49,9 @@ export interface Analysis {
   recommendation: "accept" | "reject";
   recommendation_reason: string;
   preference_conflicts: string[];
+  likely_scam: boolean;
+  scam_risk: ScamRisk;
+  scam_signals: string[];
   created_at?: string;
 }
 
