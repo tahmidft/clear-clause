@@ -1,7 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard";
+
+function renderDashboard() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <Dashboard />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
 
 vi.mock("@/lib/api", () => ({
   getContracts: vi.fn(async () => [
@@ -18,6 +30,9 @@ vi.mock("@/lib/api", () => ({
           recommendation: "accept",
           recommendation_reason: "",
           preference_conflicts: [],
+          likely_scam: false,
+          scam_risk: "low",
+          scam_signals: [],
         }
       : null,
   ),
@@ -32,11 +47,7 @@ describe("dashboard", () => {
   });
 
   it("filters contracts by name", async () => {
-    render(
-      <MemoryRouter>
-        <Dashboard />
-      </MemoryRouter>,
-    );
+    renderDashboard();
     await waitFor(() => expect(screen.getByText("msa.pdf")).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText(/search contracts/i), { target: { value: "nda" } });
     expect(screen.queryByText("msa.pdf")).not.toBeInTheDocument();
