@@ -1,0 +1,39 @@
+INDEPENDENT CONTRACTOR AGREEMENT
+This Agreement is entered into March 1, 2026, between Northwind Analytics LLC, a Delaware limited liability company with offices at 500 Market Street, 12th Floor, San Francisco, CA 94105 ("Client"), and Alex Rivera, an independent design contractor ("Contractor").
+
+1. SERVICES
+Contractor shall perform brand and product design services per Statement of Work #SOW-2026-014, including identity concepts, social templates, and one (1) marketing landing page design. Contractor performs Services as an independent contractor.
+
+2. COMPENSATION
+Fixed fee: $8,000. Client shall pay within ninety (90) calendar days after written acceptance of final deliverables in Client's procurement portal. Client may offset disputed amounts against invoices. Late payments accrue 1.5% monthly interest.
+
+3. REVISIONS
+Contractor shall provide unlimited revision cycles at no additional charge until Client's brand director provides written approval. "Final acceptance" is solely at Client's discretion. No payment is due for work-in-progress.
+
+4. INTELLECTUAL PROPERTY
+All Work Product shall be deemed work made for hire. To the extent any Work Product does not qualify, Contractor irrevocably assigns all worldwide rights to Client, including moral rights where waivable. Contractor may not use Work Product in a portfolio without separate written approval for each item.
+
+5. CONFIDENTIALITY
+Contractor shall protect Confidential Information for five (5) years and return all materials within three (3) days of termination.
+
+6. NON-COMPETE
+For twelve (12) months post-termination, Contractor shall not provide design services to any SaaS analytics competitor serving similar customers within fifty (50) miles of San Francisco or via online channels targeting Client's customers.
+
+7. TERMINATION
+Client may terminate for convenience on five (5) days' email notice. Contractor may terminate only for uncured material breach. Upon termination, Client pays only for deliverables accepted in writing; no kill fee applies.
+
+8. INDEMNIFICATION
+Contractor shall defend and indemnify Client against claims arising from the Services, including alleged infringement, even if caused in part by Client specifications, except where finally adjudicated as Client's sole gross negligence.
+
+9. LIMITATION OF LIABILITY
+Client liability is capped at fees paid in the prior three (3) months. Contractor liability is unlimited and includes consequential, incidental, and reputational damages.
+
+10. GOVERNING LAW
+California law governs. Exclusive venue: San Francisco County, California.
+
+SIGNATURES
+CLIENT: Northwind Analytics LLC
+By: _________________________  Name: Jordan Lee  Title: VP Marketing
+
+CONTRACTOR: Alex Rivera
+Signature: _________________________  Date: _______________
