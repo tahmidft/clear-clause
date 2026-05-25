@@ -146,6 +146,15 @@ For demos only: **Authentication → Providers → Email → turn OFF “Confirm
 
 Set Supabase **Site URL** and **Redirect URLs** to your Vercel origin(s) (production + preview URLs if using email links).
 
+**Automate** (requires [Account → Access Tokens](https://supabase.com/dashboard/account/tokens) as `SUPABASE_ACCESS_TOKEN`, or `supabase login`):
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_…   # optional if already logged in via CLI
+bash scripts/supabase-auth-urls.sh
+```
+
+Defaults: Site URL `https://clearclause.vercel.app`; redirects include that origin, `https://frontend-teal-ten-82.vercel.app/**`, and local Vite hosts. Override with `SUPABASE_SITE_URL` or `SUPABASE_REDIRECT_URLS` (newline-separated patterns).
+
 ## Security rules for agents
 
 - Never paste or commit real keys, JWTs, or `DATABASE_URL` with passwords.
@@ -164,5 +173,6 @@ curl -s http://localhost:8000/health
 
 ## Related
 
+- Production orchestration: `.cursor/skills/production-deploy/SKILL.md`
 - Frontend deploy and `VITE_*` on Vercel: `.cursor/skills/vercel/SKILL.md`
-- Backend host: Render (`render.yaml`) — not Supabase
+- Backend host: Render — `.cursor/skills/render/SKILL.md`

@@ -134,16 +134,23 @@ See `.cursor/skills/vercel/SKILL.md` for custom apex domains (DNS A/CNAME) and p
 
 See `.cursor/skills/render/SKILL.md` for deploy hooks, keep-alive, and health troubleshooting.
 
-### Keep-alive (cron-job.org)
+### Keep-alive
 
-After deploy, create a free cron job:
+- **GitHub Actions:** `.github/workflows/render-keepalive.yml` pings `/health` every 10 minutes (no extra account).
+- **Optional:** [cron-job.org](https://cron-job.org) with the same URL, GET, ≥60s timeout.
 
-- **URL:** `https://clearclause-api.onrender.com/health`
-- **Interval:** every 10 minutes
-- **Method:** GET
-- **Timeout:** at least 60 seconds
+Keep-alive reduces cold starts; it does not fix a failed deploy or suspended service.
 
-This reduces cold starts on Render’s free tier; it does not fix a failed deploy or suspended service.
+### Supabase auth URLs (production)
+
+With a [Supabase access token](https://supabase.com/dashboard/account/tokens) in env:
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_…
+bash scripts/supabase-auth-urls.sh
+```
+
+See `.cursor/skills/supabase/SKILL.md` and `.cursor/skills/production-deploy/SKILL.md`.
 
 ## Pre-deploy regression checklist
 

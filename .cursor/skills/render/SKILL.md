@@ -96,9 +96,17 @@ bash scripts/deploy-production.sh
 
 Deploys Vercel frontend (`vercel --prod`), then runs `render-sync-deploy.sh` if `RENDER_API_KEY` or `RENDER_DEPLOY_HOOK_URL` is set.
 
-## Keep-alive (cron-job.org)
+## Keep-alive
 
 Render **free tier** spins down after ~15 minutes of no traffic. Cold starts can take 30–90 seconds; a **failed or suspended** service may never respond.
+
+### GitHub Actions (preferred — no extra account)
+
+Repo workflow `.github/workflows/render-keepalive.yml` runs every **10 minutes** and `GET`s `/health` with a 120s timeout (3 retries). Works as long as the default branch has recent GitHub activity; scheduled workflows still run on public repos.
+
+Manual trigger: **Actions → Render keep-alive → Run workflow**.
+
+### cron-job.org (optional)
 
 Create a free job at [cron-job.org](https://cron-job.org):
 
@@ -109,7 +117,7 @@ Create a free job at [cron-job.org](https://cron-job.org):
 | Interval | Every **10 minutes** |
 | Timeout | ≥ 60 seconds |
 
-This reduces cold starts; it does **not** fix a crashed deploy or missing env vars.
+Keep-alive reduces cold starts; it does **not** fix a crashed deploy, missing env vars, or a **suspended** service.
 
 ## Free-tier behavior
 
@@ -164,6 +172,7 @@ Expect `{"status":"ok"}`. Then test sign-in and upload from the Vercel app.
 
 ## Related
 
+- Full production flow: `.cursor/skills/production-deploy/SKILL.md`
 - Frontend + domains: `.cursor/skills/vercel/SKILL.md`
-- Supabase Auth URLs after domain change: `.cursor/skills/supabase/SKILL.md`
+- Supabase Auth URLs: `.cursor/skills/supabase/SKILL.md` — `bash scripts/supabase-auth-urls.sh`
 - Env tables: repo `README.md`

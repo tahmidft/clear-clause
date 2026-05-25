@@ -213,6 +213,7 @@ Optional: cron `GET https://<render-host>/health` every ~10 min to reduce Render
 
 ## Related
 
+- Production orchestration: `.cursor/skills/production-deploy/SKILL.md`
 - Supabase schema, Auth, Storage: `.cursor/skills/supabase/SKILL.md`
 - Render API, keep-alive, health: `.cursor/skills/render/SKILL.md`
 - Full env table: repo `README.md`
