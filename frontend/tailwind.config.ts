@@ -34,7 +34,15 @@ export default {
         ],
       },
       fontSize: {
-        headline: ["34px", { lineHeight: "1.1", letterSpacing: "-0.022em" }],
+        headline: ["28px", { lineHeight: "1.12", letterSpacing: "-0.032em" }],
+        title: ["22px", { lineHeight: "1.2", letterSpacing: "-0.024em" }],
+        "body-lg": ["16px", { lineHeight: "1.5" }],
+        body: ["15px", { lineHeight: "1.47" }],
+        caption: ["13px", { lineHeight: "1.35" }],
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        elevated: "var(--shadow-lg)",
       },
       colors: {
         border: "hsl(var(--border))",

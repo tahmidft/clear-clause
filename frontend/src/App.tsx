@@ -10,6 +10,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Landing from "@/pages/Landing.tsx";
 import Login from "@/pages/Login.tsx";
 import Signup from "@/pages/Signup.tsx";
+import ForgotPassword from "@/pages/ForgotPassword.tsx";
+import UpdatePassword from "@/pages/UpdatePassword.tsx";
 import Onboarding from "@/pages/Onboarding.tsx";
 import Dashboard from "@/pages/Dashboard.tsx";
 import AnalysisPage from "@/pages/Analysis.tsx";
@@ -30,6 +32,8 @@ const App = () => (
                 <Route path="/" element={<Landing />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/update-password" element={<UpdatePassword />} />
                 <Route element={<ProtectedRoute />}>
                   <Route path="/onboarding" element={<Onboarding />} />
                   <Route element={<Layout />}>
