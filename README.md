@@ -115,7 +115,8 @@ This restarts the API, starts Vite if needed, and runs `scripts/smoke-local.py` 
 
 1. Import the `frontend` directory as a Vite project (or set **Root Directory** to `frontend` in Vercel).
 2. Set build command `npm run build` and output directory `dist`.
-3. Add environment variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (your Render API URL).
+3. Add environment variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (your Render API URL, e.g. `https://clearclause-api.onrender.com`).
+4. Production URL (current): `https://frontend-teal-ten-82.vercel.app`
 4. `frontend/vercel.json` rewrites all routes to `index.html` for client-side routing.
 
 ### Backend (Render)
@@ -124,7 +125,8 @@ This restarts the API, starts Vite if needed, and runs `scripts/smoke-local.py` 
 2. Use **Root Directory** `backend`, or keep root as repo root and set:
    - **Build command:** `cd backend && pip install -r requirements.txt`
    - **Start command:** `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
-3. Add the same env vars as in `backend/.env.example`, plus `CORS_ORIGINS` set to your Vercel origin (e.g. `https://your-app.vercel.app`).
+3. Add the same env vars as in `backend/.env.example`, plus `CORS_ORIGINS` set to your Vercel origin (e.g. `https://frontend-teal-ten-82.vercel.app,http://localhost:5173,http://127.0.0.1:5173`).
+4. From repo root with `RENDER_API_KEY` or `RENDER_DEPLOY_HOOK_URL` set: `bash scripts/render-sync-deploy.sh`
 4. Optionally use `render.yaml` as a blueprint (paths assume repo root).
 
 ### Keep-alive (cron-job.org)

@@ -1,10 +1,12 @@
 import os
 import re
 from datetime import datetime
+from functools import lru_cache
 from typing import Generator
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, create_engine
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeBase, Session, relationship, sessionmaker
 
 from config import get_settings
@@ -28,13 +30,26 @@ def _normalize_database_url(url: str) -> str:
     return url
 
 
-settings = get_settings()
-DATABASE_URL = _normalize_database_url(
-    os.environ.get("DATABASE_URL", settings.database_url or "")
-)
+def _database_url() -> str:
+    settings = get_settings()
+    return _normalize_database_url(
+        os.environ.get("DATABASE_URL", settings.database_url or "")
+    )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+@lru_cache
+def get_engine() -> Engine:
+    url = _database_url()
+    if not url:
+        raise RuntimeError(
+            "DATABASE_URL is not configured. Set it in Render env or backend/.env."
+        )
+    return create_engine(url, pool_pre_ping=True)
+
+
+@lru_cache
+def get_session_factory() -> sessionmaker[Session]:
+    return sessionmaker(autocommit=False, autoflush=False, bind=get_engine())
 
 
 class Base(DeclarativeBase):
@@ -101,7 +116,7 @@ class AnalysisRow(Base):
 
 
 def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
+    db = get_session_factory()()
     try:
         yield db
     finally:
