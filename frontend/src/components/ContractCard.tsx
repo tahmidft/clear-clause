@@ -1,8 +1,8 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
-import { AlertTriangle, CheckCircle2, Loader2, Trash2, XOctagon } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { AlertTriangle, ShieldAlert, Trash2 } from "lucide-react";
+import { ScamAlert } from "@/components/ScamAlert";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -16,7 +16,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { isLikelyScamAnalysis } from "@/lib/contractBuckets";
 import { cn } from "@/lib/utils";
 import type { Analysis, Contract } from "@/types";
 
@@ -24,36 +26,53 @@ interface ContractCardProps {
   contract: Contract;
   analysis: Analysis | null | undefined;
   isAnalyzing: boolean;
+  isFinishing?: boolean;
+  batchMode?: boolean;
   analysisError: boolean;
   onDelete: () => void;
   onRetryAnalysis: () => void;
 }
 
+/** Returns the fill color for the score ring based on the score value */
+function scoreRingColor(score: number): string {
+  if (score >= 70) return "var(--cc-green)";
+  if (score >= 40) return "var(--cc-orange)";
+  return "var(--cc-red)";
+}
+
 function MiniScoreRing({ score }: { score: number }) {
-  const size = 56;
-  const stroke = 5;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
+  const size = 52;
+  const strokeW = 4;
+  const r = (size - strokeW) / 2;
+  const circumference = 2 * Math.PI * r;
   const pct = Math.max(0, Math.min(100, score)) / 100;
-  const dash = c * (1 - pct);
-  const color = score > 70 ? "var(--color-green)" : score >= 40 ? "var(--color-yellow)" : "var(--color-red)";
+  const offset = circumference * (1 - pct);
+  const color = scoreRingColor(score);
+
   return (
-    <div className="relative h-14 w-14 shrink-0" aria-hidden>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-separator)" strokeWidth={stroke} />
+    <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none"
+          stroke="var(--cc-ring-track)"
+          strokeWidth={strokeW}
+        />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
           fill="none"
           stroke={color}
-          strokeWidth={stroke}
+          strokeWidth={strokeW}
           strokeLinecap="round"
-          strokeDasharray={`${c} ${c}`}
-          strokeDashoffset={dash}
+          strokeDasharray={`${circumference} ${circumference}`}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 0.5s ease" }}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-[var(--color-label)]">
+      <span
+        className="absolute inset-0 flex items-center justify-center tabular-nums"
+        style={{ fontSize: 13, fontWeight: 700, color }}
+      >
         {score}
       </span>
     </div>
@@ -64,43 +83,85 @@ export function ContractCard({
   contract,
   analysis,
   isAnalyzing,
+  isFinishing = false,
+  batchMode = false,
   analysisError,
   onDelete,
   onRetryAnalysis,
 }: ContractCardProps) {
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const [hovered, setHovered] = React.useState(false);
 
   const score = analysis?.overall_score ?? null;
   const accept = analysis?.recommendation === "accept";
-  const statusLabel = isAnalyzing ? "Analyzing" : analysisError ? "Failed" : analysis ? "Completed" : "Pending";
+  const scamFlag = isLikelyScamAnalysis(analysis);
+  const showScamAlert = scamFlag && !isAnalyzing && !isFinishing && analysis;
+
+  const statusLabel = isFinishing
+    ? batchMode ? "Scoring" : "Complete"
+    : isAnalyzing ? "Analyzing"
+    : analysisError ? "Failed"
+    : analysis
+      ? scamFlag ? "Likely scam" : accept ? "Accept" : "Reject"
+      : "Pending";
+
+  /* Badge colours derived from bucket */
+  const badgeBg = scamFlag && !isAnalyzing && !isFinishing
+    ? "var(--cc-scam-bg)"
+    : accept && analysis && !scamFlag
+      ? "var(--cc-accept-bg)"
+      : analysis && !scamFlag
+        ? "var(--cc-reject-bg)"
+        : "var(--cc-surface-2)";
+
+  const badgeBorder = scamFlag && !isAnalyzing && !isFinishing
+    ? "1px solid var(--cc-scam-border)"
+    : accept && analysis && !scamFlag
+      ? "1px solid var(--cc-accept-border)"
+      : analysis && !scamFlag
+        ? "1px solid var(--cc-reject-border)"
+        : "1px solid var(--cc-card-border)";
+
+  const badgeColor = scamFlag && !isAnalyzing && !isFinishing
+    ? "var(--cc-scam-color)"
+    : accept && analysis && !scamFlag
+      ? "var(--cc-accept-color)"
+      : analysis && !scamFlag
+        ? "var(--cc-reject-color)"
+        : "var(--cc-muted)";
 
   const deleteControls = (
     <>
       {!isMobile ? (
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="icon"
-              className="min-h-11 min-w-11 shrink-0 rounded-[10px] border-[var(--color-separator)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-red)]"
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--cc-red)", opacity: 0.5, transition: "opacity 0.2s ease, background 0.2s ease" }}
+              onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "1"; el.style.background = "rgba(255,59,48,0.08)"; }}
+              onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.opacity = "0.5"; el.style.background = "transparent"; }}
               aria-label={`Delete contract ${contract.file_name}`}
             >
-              <Trash2 className="h-4 w-4 text-[var(--color-red)]" aria-hidden />
-            </Button>
+              <Trash2 className="h-4 w-4" aria-hidden />
+            </button>
           </AlertDialogTrigger>
-          <AlertDialogContent className="rounded-[12px]">
+          <AlertDialogContent
+            className="rounded-[14px]"
+            style={{ background: "var(--cc-modal-bg)", border: "0.5px solid var(--cc-modal-border)" }}
+          >
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete this contract?</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle style={{ color: "var(--cc-title)" }}>Delete this contract?</AlertDialogTitle>
+              <AlertDialogDescription style={{ color: "var(--cc-muted)" }}>
                 This removes the file and its analysis from your account. This cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel className="min-h-11 rounded-[10px]">Cancel</AlertDialogCancel>
+              <AlertDialogCancel className="rounded-[10px]">Cancel</AlertDialogCancel>
               <AlertDialogAction
-                className="min-h-11 rounded-[10px] bg-[var(--color-red)] hover:bg-[var(--color-red)]/90"
+                className="rounded-[10px]"
+                style={{ background: "var(--cc-red)" }}
                 onClick={onDelete}
               >
                 Delete
@@ -111,36 +172,32 @@ export function ContractCard({
       ) : (
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
           <SheetTrigger asChild>
-            <Button
+            <button
               type="button"
-              variant="outline"
-              size="icon"
-              className="min-h-11 min-w-11 shrink-0 rounded-[10px]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] outline-none"
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--cc-red)", opacity: 0.5 }}
               aria-label={`Delete contract ${contract.file_name}`}
             >
-              <Trash2 className="h-4 w-4 text-[var(--color-red)]" aria-hidden />
-            </Button>
+              <Trash2 className="h-4 w-4" aria-hidden />
+            </button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="rounded-t-[12px]" aria-describedby={undefined}>
+          <SheetContent
+            side="bottom"
+            className="rounded-t-[16px]"
+            style={{ background: "var(--cc-modal-bg)", border: "0.5px solid var(--cc-modal-border)" }}
+            aria-describedby={undefined}
+          >
             <SheetHeader>
-              <SheetTitle>Delete this contract?</SheetTitle>
+              <SheetTitle style={{ color: "var(--cc-title)" }}>Delete this contract?</SheetTitle>
             </SheetHeader>
-            <p className="px-4 pb-4 text-[17px] text-[var(--color-secondary)]">
+            <p className="px-4 pb-4 text-[14px]" style={{ color: "var(--cc-muted)" }}>
               This removes the file and its analysis. This cannot be undone.
             </p>
             <SheetFooter className="flex-col gap-2 sm:flex-col">
-              <Button
-                type="button"
-                variant="destructive"
-                className="min-h-11 w-full rounded-[10px]"
-                onClick={() => {
-                  setSheetOpen(false);
-                  onDelete();
-                }}
-              >
+              <Button type="button" variant="destructive" className="w-full rounded-[10px]" onClick={() => { setSheetOpen(false); onDelete(); }}>
                 Delete contract
               </Button>
-              <Button type="button" variant="outline" className="min-h-11 w-full rounded-[10px]" onClick={() => setSheetOpen(false)}>
+              <Button type="button" variant="outline" className="w-full rounded-[10px]" onClick={() => setSheetOpen(false)}>
                 Cancel
               </Button>
             </SheetFooter>
@@ -151,61 +208,102 @@ export function ContractCard({
   );
 
   return (
-    <Card className="relative flex flex-col gap-4 rounded-[12px] border border-[var(--color-separator)] bg-[var(--color-surface)] p-6 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
-      <div className="flex items-start justify-between gap-3">
-        <Link
-          to={`/analysis/${contract.id}`}
-          className="min-h-[44px] min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-blue)]"
-          aria-label={`Open analysis for ${contract.file_name}`}
-        >
-          <h3 className="truncate font-display text-lg font-semibold text-[var(--color-label)]">{contract.file_name}</h3>
-          <p className="mt-1 text-sm text-[var(--color-secondary)]">
-            Uploaded {format(new Date(contract.created_at), "MMM d, yyyy")}
-          </p>
-        </Link>
-        {deleteControls}
-      </div>
-
-      <div className="inline-flex max-w-fit items-center rounded-full border border-[var(--color-separator)] px-3 py-1 text-xs font-medium text-[var(--color-secondary)]">
-        Status: {statusLabel}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-4">
-        {isAnalyzing ? (
-          <div className="flex items-center gap-2 text-[var(--color-secondary)]" role="status" aria-live="polite">
-            <Loader2 className="h-6 w-6 animate-spin text-[var(--color-blue)]" aria-hidden />
-            <span className="text-[17px]">Analyzing your contract...</span>
-          </div>
-        ) : analysisError ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-[var(--color-red)]" role="alert">
-              <AlertTriangle className="h-5 w-5" aria-hidden />
-              <span className="text-[17px]">Analysis failed</span>
-            </div>
-            <Button type="button" variant="secondary" className="min-h-11 rounded-[10px]" onClick={onRetryAnalysis} aria-label="Retry contract analysis">
-              Retry analysis
-            </Button>
-          </div>
-        ) : score != null ? (
-          <>
-            <MiniScoreRing score={score} />
-            <div
-              className={cn(
-                "inline-flex min-h-9 items-center gap-2 rounded-full border px-3 py-1 text-sm font-medium",
-                accept
-                  ? "border-[var(--color-green)]/35 bg-[var(--color-green)]/12 text-[var(--color-green)]"
-                  : "border-[var(--color-red)]/35 bg-[var(--color-red)]/12 text-[var(--color-red)]",
-              )}
-              role="status"
+    <div
+      className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[14px]"
+      style={{
+        background: "var(--cc-card-bg)",
+        border: scamFlag && !isAnalyzing && !isFinishing
+          ? "0.5px solid var(--cc-scam-border)"
+          : hovered
+          ? "0.5px solid var(--cc-card-hover-border)"
+          : "0.5px solid var(--cc-card-border)",
+        boxShadow: hovered ? "var(--cc-card-hover-shadow)" : "none",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
+        {/* Title row */}
+        <div className="flex items-start justify-between gap-3">
+          <Link
+            to={`/analysis/${contract.id}`}
+            className="min-h-[44px] min-w-0 flex-1 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
+            aria-label={`Open analysis for ${contract.file_name}`}
+          >
+            <h3
+              className="line-clamp-2 leading-snug"
+              style={{ fontSize: 13, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--cc-body)" }}
             >
-              {accept ? <CheckCircle2 className="h-4 w-4" aria-hidden /> : <XOctagon className="h-4 w-4" aria-hidden />}
-              <span>{accept ? "Accept" : "Reject"}</span>
+              {contract.file_name}
+            </h3>
+            <p className="mt-1" style={{ fontSize: 11, color: "var(--cc-subtle)" }}>
+              Uploaded {format(new Date(contract.created_at), "MMM d, yyyy")}
+            </p>
+          </Link>
+          {deleteControls}
+        </div>
+
+        {/* Status badge */}
+        <div
+          className="inline-flex max-w-fit items-center gap-1.5 rounded-full px-3 py-1"
+          style={{ fontSize: 12, fontWeight: 600, background: badgeBg, border: badgeBorder, color: badgeColor }}
+        >
+          {scamFlag && !isAnalyzing && !isFinishing ? <ShieldAlert className="h-3.5 w-3.5" aria-hidden /> : null}
+          {statusLabel}
+        </div>
+
+        {/* Score / progress body */}
+        <div className="flex flex-1 flex-col justify-end">
+          {isAnalyzing || isFinishing ? (
+            <AnalysisProgress
+              running={isAnalyzing && !isFinishing}
+              finishing={isFinishing}
+              variant="compact"
+              title={contract.file_name}
+            />
+          ) : analysisError ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2" style={{ color: "var(--cc-red)" }} role="alert">
+                <AlertTriangle className="h-5 w-5" aria-hidden />
+                <span className="text-[14px]">Analysis failed</span>
+              </div>
+              <Button type="button" variant="secondary" className="rounded-[10px]" onClick={onRetryAnalysis}>
+                Retry
+              </Button>
             </div>
-          </>
-        ) : (
-          <p className="text-[17px] text-[var(--color-secondary)]">No analysis yet.</p>
-        )}
+          ) : score != null ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <MiniScoreRing score={score} />
+                {!scamFlag ? (
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block rounded-full"
+                      style={{ width: 6, height: 6, background: scoreRingColor(score), flexShrink: 0 }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 500, color: scoreRingColor(score) }}>
+                      {accept ? "Accept" : "Reject"}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              {showScamAlert ? (
+                <ScamAlert
+                  likelyScam={analysis.likely_scam}
+                  scamRisk={analysis.scam_risk}
+                  scamSignals={analysis.scam_signals}
+                  compact
+                  className="[&_ul]:max-h-24 [&_ul]:overflow-y-auto"
+                />
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-[13px]" style={{ color: "var(--cc-muted)" }}>No analysis yet.</p>
+          )}
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
