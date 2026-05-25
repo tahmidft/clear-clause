@@ -11,6 +11,13 @@ create table preferences (
   ip_ownership boolean default true,
   non_compete boolean default false,
   termination_notice_days integer default 14,
+  max_revision_rounds integer default 3,
+  requires_deposit boolean default true,
+  min_deposit_percent integer default 25,
+  liability_cap_required boolean default true,
+  accepts_broad_indemnification boolean default false,
+  kill_fee_required boolean default true,
+  written_scope_required boolean default true,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
@@ -35,6 +42,9 @@ create table analyses (
   recommendation text check (recommendation in ('accept', 'reject')),
   recommendation_reason text,
   preference_conflicts jsonb,
+  likely_scam boolean default false,
+  scam_risk text default 'low' check (scam_risk in ('low', 'medium', 'high')),
+  scam_signals jsonb default '[]'::jsonb,
   created_at timestamp with time zone default now()
 );
 
