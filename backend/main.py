@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 from cors_helpers import with_loopback_aliases
 from config import get_settings
+from db_errors import http_exception_from_sqlalchemy
 from routers import analysis, contracts, preferences
 
 app = FastAPI(title="ClearClause API")
@@ -27,6 +30,12 @@ app.add_middleware(
 app.include_router(contracts.router, prefix="/contracts", tags=["contracts"])
 app.include_router(analysis.router, prefix="/analysis", tags=["analysis"])
 app.include_router(preferences.router, prefix="/preferences", tags=["preferences"])
+
+
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_error_handler(_request: Request, exc: SQLAlchemyError) -> JSONResponse:
+    http_exc = http_exception_from_sqlalchemy(exc, context="processing your request")
+    return JSONResponse(status_code=http_exc.status_code, content={"detail": http_exc.detail})
 
 
 @app.middleware("http")

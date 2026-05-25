@@ -97,10 +97,17 @@ async def upload_contract(
     try:
         storage_path, file_url = storage_service.upload_contract_bytes(user_id, raw, file.filename, content_type)
     except Exception as e:
-        raise HTTPException(
-            status_code=502,
-            detail="Could not store the file. Check that the contracts storage bucket exists.",
-        ) from e
+        msg = str(e).strip()
+        if "Bucket not found" in msg or "bucket" in msg.lower():
+            detail = (
+                f'Could not store the file. Create a public Storage bucket named "{storage_service.BUCKET}" '
+                "in Supabase → Storage (see README / supabase skill)."
+            )
+        elif msg:
+            detail = f"Could not store the file: {msg}"
+        else:
+            detail = "Could not store the file. Check Supabase Storage and SUPABASE_SERVICE_ROLE_KEY in backend/.env."
+        raise HTTPException(status_code=502, detail=detail) from e
 
     now = datetime.now(timezone.utc)
     store_raw_text = settings.contract_text_persistence_enabled

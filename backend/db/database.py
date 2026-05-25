@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from typing import Generator
 
@@ -10,8 +11,20 @@ from config import get_settings
 
 
 def _normalize_database_url(url: str) -> str:
+    """Normalize Supabase Postgres URIs from dashboard copy/paste."""
+    if not url:
+        return url
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
+    # Dashboard placeholders use [YOUR-PASSWORD]; copying them literally breaks libpq/urlparse.
+    url = re.sub(
+        r"(postgresql://[^:]+):\[([^\]]+)\]@",
+        r"\1:\2@",
+        url,
+        count=1,
+    )
+    if "sslmode=" not in url:
+        url += ("&" if "?" in url else "?") + "sslmode=require"
     return url
 
 
@@ -32,12 +45,20 @@ class PreferenceRow(Base):
     __tablename__ = "preferences"
 
     id = Column(PGUUID(as_uuid=True), primary_key=True)
-    user_id = Column(PGUUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    # FK to auth.users exists in supabase/schema.sql; omit ORM FK (auth schema is not in metadata).
+    user_id = Column(PGUUID(as_uuid=True), unique=True, nullable=False, index=True)
     unpaid_revisions = Column(Boolean, default=False)
     payment_terms_days = Column(Integer, default=30)
     ip_ownership = Column(Boolean, default=True)
     non_compete = Column(Boolean, default=False)
     termination_notice_days = Column(Integer, default=14)
+    max_revision_rounds = Column(Integer, default=3)
+    requires_deposit = Column(Boolean, default=True)
+    min_deposit_percent = Column(Integer, default=25)
+    liability_cap_required = Column(Boolean, default=True)
+    accepts_broad_indemnification = Column(Boolean, default=False)
+    kill_fee_required = Column(Boolean, default=True)
+    written_scope_required = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -46,7 +67,7 @@ class ContractRow(Base):
     __tablename__ = "contracts"
 
     id = Column(PGUUID(as_uuid=True), primary_key=True)
-    user_id = Column(PGUUID(as_uuid=True), ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(PGUUID(as_uuid=True), nullable=False, index=True)
     file_name = Column(Text, nullable=False)
     storage_path = Column(Text, nullable=True)
     file_url = Column(Text, nullable=True)
@@ -71,6 +92,9 @@ class AnalysisRow(Base):
     recommendation = Column(String(16), nullable=True)
     recommendation_reason = Column(Text, nullable=True)
     preference_conflicts = Column(JSONB, nullable=True)
+    likely_scam = Column(Boolean, default=False)
+    scam_risk = Column(String(16), default="low")
+    scam_signals = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
 
     contract = relationship("ContractRow", back_populates="analysis")
