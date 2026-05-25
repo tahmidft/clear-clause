@@ -29,6 +29,13 @@ def upsert_preferences(
             row.ip_ownership = body.ip_ownership
             row.non_compete = body.non_compete
             row.termination_notice_days = body.termination_notice_days
+            row.max_revision_rounds = body.max_revision_rounds
+            row.requires_deposit = body.requires_deposit
+            row.min_deposit_percent = body.min_deposit_percent
+            row.liability_cap_required = body.liability_cap_required
+            row.accepts_broad_indemnification = body.accepts_broad_indemnification
+            row.kill_fee_required = body.kill_fee_required
+            row.written_scope_required = body.written_scope_required
             row.updated_at = now
         else:
             row = PreferenceRow(
@@ -39,6 +46,13 @@ def upsert_preferences(
                 ip_ownership=body.ip_ownership,
                 non_compete=body.non_compete,
                 termination_notice_days=body.termination_notice_days,
+                max_revision_rounds=body.max_revision_rounds,
+                requires_deposit=body.requires_deposit,
+                min_deposit_percent=body.min_deposit_percent,
+                liability_cap_required=body.liability_cap_required,
+                accepts_broad_indemnification=body.accepts_broad_indemnification,
+                kill_fee_required=body.kill_fee_required,
+                written_scope_required=body.written_scope_required,
                 created_at=now,
                 updated_at=now,
             )
