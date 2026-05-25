@@ -128,6 +128,19 @@ Keep-alive reduces cold starts; it does **not** fix a crashed deploy, missing en
 
 ## Troubleshooting
 
+### Build fails on `pydantic-core` / `maturin` / read-only file system
+
+Logs show `python3.14` and `pydantic_core-2.x.x.tar.gz` (source build) with `Read-only file system` under `/usr/local/cargo/`.
+
+**Cause:** Render used Python **3.14**; there is no prebuilt wheel, so pip compiles Rust extensions and fails.
+
+**Fix:**
+
+1. Set **`PYTHON_VERSION`** = `3.12.9` in Render env (or keep `backend/runtime.txt` with `python-3.12.9` when `rootDir: backend`).
+2. Redeploy. Build should download `pydantic_core-*.whl` instead of `.tar.gz`.
+
+Repo `render.yaml` pins `PYTHON_VERSION` for Blueprint deploys.
+
 ### `curl` times out with **0 bytes received** (15–90s+)
 
 Usually **not** a normal cold start. Check Render dashboard:

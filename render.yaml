@@ -1,12 +1,16 @@
 services:
   - type: web
     name: clearclause-api
-    env: python
+    runtime: python
     plan: free
+    rootDir: backend
     healthCheckPath: /health
-    buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      # Render defaulted to Python 3.14; pydantic-core has no wheel and Rust build fails on RO filesystem.
+      - key: PYTHON_VERSION
+        value: "3.12.9"
       - key: APP_ENV
         value: production
       - key: GEMINI_API_KEY
