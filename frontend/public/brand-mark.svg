@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ClearClause">
+  <defs>
+    <linearGradient id="cc-bg" x1="80" y1="64" x2="432" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#007AFF"/>
+      <stop offset="1" stop-color="#0051D5"/>
+    </linearGradient>
+    <linearGradient id="cc-shine" x1="128" y1="80" x2="352" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cc-doc" x1="128" y1="112" x2="352" y2="384" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#cc-bg)"/>
+  <rect x="64" y="56" width="384" height="176" rx="88" fill="url(#cc-shine)"/>
+  <path
+    d="M132 116h174.4a17.6 17.6 0 0 1 17.6 17.6v31.2l53.6-53.6V354H145.6a16.8 16.8 0 0 1-16.8-16.8V116z"
+    fill="url(#cc-doc)"
+  />
+  <path d="M324 164.8l53.6 53.6V164.8H324z" fill="#ffffff" opacity="0.26"/>
+  <path
+    d="M152 195.2h115.2M152 225.6h102.4M152 256h83.2"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="13.6"
+    stroke-linecap="round"
+    opacity="0.22"
+  />
+  <path
+    d="M147.2 348.8c25.6 21.6 51.2 21.6 76.8 0 25.6 21.6 51.2 21.6 76.8 0"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="12"
+    stroke-linecap="round"
+    opacity="0.14"
+  />
+  <path
+    d="M181.6 173.6C146.4 173.6 125.6 200.8 125.6 256s20.8 82.4 56 82.4c12 0 21.6-1.92 29.6-5.12"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="35.2"
+    stroke-linecap="round"
+  />
+  <path
+    d="M264.8 173.6c-35.2 0-56 27.2-56 82.4s20.8 82.4 56 82.4c12 0 21.6-1.92 29.6-5.12"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="35.2"
+    stroke-linecap="round"
+    opacity="0.96"
+  />
+  <path
+    d="M289.6 285.6c15.2 10.4 28 31.2 32.8 53.6l44-65.6 20 16.8"
+    fill="none"
+    stroke="#34C759"
+    stroke-width="34.4"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="381.6" cy="274.4" r="16.8" fill="#34C759" opacity="0.9"/>
+</svg>
