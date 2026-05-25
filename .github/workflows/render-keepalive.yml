@@ -14,7 +14,7 @@ jobs:
       - name: GET /health
         run: |
           set -euo pipefail
-          url="https://clearclause-api.onrender.com/health"
+          url="${RENDER_HEALTH_URL:-https://clearclause-api-ma86.onrender.com/health}"
           for attempt in $(seq 1 3); do
             if curl -fsS --max-time 120 "$url"; then
               echo

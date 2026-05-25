@@ -33,7 +33,7 @@ jobs:
             exit 0
           fi
           for i in $(seq 1 30); do
-            if curl -fsS --max-time 60 https://clearclause-api.onrender.com/health; then
+            if curl -fsS --max-time 60 "${RENDER_HEALTH_URL:-https://clearclause-api-ma86.onrender.com/health}"; then
               echo
               exit 0
             fi

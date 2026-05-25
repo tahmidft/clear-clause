@@ -16,7 +16,7 @@ The **FastAPI backend** runs on Render as web service **`clearclause-api`**. The
 | Item | Value |
 |------|--------|
 | Service name | `clearclause-api` |
-| Production URL | `https://clearclause-api.onrender.com` |
+| Production URL | Your service URL on Render (e.g. `https://clearclause-api-ma86.onrender.com` — suffix varies per account; copy from **Settings → URL**) |
 | Health | `GET /health` → `{"status":"ok"}` (no DB; safe for keep-alive) |
 | Blueprint | `render.yaml` at repo root |
 | Root / build / start | Repo root; `cd backend && pip install -r requirements.txt`; `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT` |
