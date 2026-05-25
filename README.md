@@ -1,6 +1,6 @@
 # ClearClause
 
-ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, and the app extracts the text, runs analysis with Google Gemini 1.5 Flash on the backend, and stores results in Supabase PostgreSQL. Authentication is handled by Supabase Auth; the FastAPI backend validates every request using the Supabase Auth REST API.
+ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, and the app extracts the text, runs analysis with Google Gemini on the backend, and stores results in Supabase PostgreSQL. Authentication is handled by Supabase Auth; the FastAPI backend validates every request using the Supabase Auth REST API.
 
 ## Repository layout
 
@@ -9,6 +9,7 @@ ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, 
 | `frontend/` | React + TypeScript + Vite, Tailwind CSS, shadcn/ui, Lucide icons |
 | `backend/` | FastAPI API, Gemini integration, PDF/DOCX parsing, Supabase Storage |
 | `supabase/schema.sql` | Tables, RLS policies, and indexes to run in the Supabase SQL editor |
+| `samples/` | Demo contracts (good, bad, long, scam) as DOCX + TXT for uploads and walkthroughs |
 | `render.yaml` | Example Render blueprint for the API |
 | `frontend/vercel.json` | SPA rewrite rules for Vercel |
 
@@ -24,7 +25,7 @@ ClearClause is an AI-powered freelance contract analyzer. Upload a PDF or DOCX, 
 1. Create a project and note the **Project URL**, **anon public** key, and **service role** key (server only).
 2. In **SQL Editor**, run `supabase/schema.sql` from this repo.
 3. Under **Storage**, create a **public** bucket named `contracts` (or keep it private and adjust how `file_url` is stored; the backend expects a public URL path segment `/public/contracts/` for deletion).
-4. Under **Project Settings → Database**, copy the **connection string** (URI) for `DATABASE_URL` (use the direct connection or pooler as you prefer; add `?sslmode=require` if required).
+4. Under **Project Settings → Database** (or **Connect**), copy the **connection pooler** URI for `DATABASE_URL` if your network is IPv4-only (common on local Wi‑Fi). Direct `db.*.supabase.co` is IPv6-only and often fails locally. Use Transaction pooler (port `6543`) or Session pooler (port `5432`); add `?sslmode=require` if not included. Do not wrap the password in `[brackets]` from the dashboard placeholder.
 
 ## Auth setup
 
@@ -37,9 +38,9 @@ The signup screen shows Supabase errors in a toast. When **Confirm email** is en
 Common fixes:
 
 1. **Authentication → Providers → Email**: enable signup; **Confirm email** ON for production, OFF only for local/demo if you want instant sign-in without mail.
-2. **Authentication → URL configuration**: **Site URL** and **Redirect URLs** must include your app origin (local: `http://127.0.0.1:5173/**`; production: your Vercel URL + `/**`).
+2. **Authentication → URL configuration**: **Site URL** and **Redirect URLs** must include your app origin (local: `http://127.0.0.1:5173/**`; production: `https://clearclause.vercel.app/**`).
 3. **SMTP**: default Supabase mail is rate-limited and often goes to spam—configure custom SMTP for production (see `.cursor/skills/supabase/SKILL.md`).
-4. **`VITE_SUPABASE_ANON_KEY`**: use the **anon (public)** key from **Project Settings → API**; never the service role key.
+4. **`VITE_SUPABASE_ANON_KEY`**: use the **Publishable** key (`sb_publishable_…`) from **Project Settings → API** (legacy `eyJ…` anon JWT also works); never the secret / service role key.
 5. **Duplicate email**: sign in instead of signing up again.
 
 **Demo without email:** turn off **Confirm email** in the Supabase dashboard; users can sign up and use the app immediately.
@@ -97,6 +98,16 @@ npm run dev
 ```
 
 Open the URL Vite prints (default `http://localhost:5173`).
+
+### Quick start (automated)
+
+From the repo root:
+
+```bash
+bash scripts/dev-up.sh
+```
+
+This restarts the API, starts Vite if needed, and runs `scripts/smoke-local.py` (parser, storage, database, Gemini, health checks). Then open **http://localhost:5173**, sign in, and upload a sample from `samples/` (e.g. `good-freelance-contract-sample.docx` or `scam-freelance-contract-sample.docx`). See `samples/README.md`.
 
 ## Deployment
 
