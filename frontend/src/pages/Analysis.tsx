@@ -53,7 +53,7 @@ export default function AnalysisPage() {
         if (cancelled) return;
         const c = list.find((x) => x.id === id) ?? null;
         setContract(c ?? null);
-        let a = await getAnalysis(id);
+        const a = await getAnalysis(id);
         if (cancelled) return;
         if (!a) {
           if (!cancelled) setLoading(false);

@@ -294,14 +294,14 @@ export default function Dashboard() {
 
   return (
     <div className="min-w-0">
-      <AnalysisCompleteDialog
-        open={completeDialog != null}
-        contractId={completeDialog?.contractId ?? null}
-        fileName={completeDialog?.fileName}
-        onOpenChange={(open) => {
-          if (!open) setCompleteDialog(null);
-        }}
-      />
+      {completeDialog ? (
+        <AnalysisCompleteDialog
+          open
+          contractId={completeDialog.contractId}
+          fileName={completeDialog.fileName}
+          onClose={() => setCompleteDialog(null)}
+        />
+      ) : null}
 
       <BatchReviewPickerDialog
         open={batchPickerOpen}

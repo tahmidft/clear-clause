@@ -19,7 +19,6 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger
 import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { isLikelyScamAnalysis } from "@/lib/contractBuckets";
-import { cn } from "@/lib/utils";
 import type { Analysis, Contract } from "@/types";
 
 interface ContractCardProps {

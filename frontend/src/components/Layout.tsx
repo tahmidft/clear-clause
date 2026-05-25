@@ -27,22 +27,7 @@ function WakeBanner({ visible }: { visible: boolean }) {
   );
 }
 
-/** Applies hover/active background imperatively to avoid per-item state */
-function useNavHover() {
-  const enter = (e: React.MouseEvent<HTMLElement>) => {
-    const el = e.currentTarget;
-    if (!el.dataset.active) el.style.background = "var(--cc-nav-hover-bg)";
-  };
-  const leave = (e: React.MouseEvent<HTMLElement>) => {
-    const el = e.currentTarget;
-    if (!el.dataset.active) el.style.background = "";
-  };
-  return { onMouseEnter: enter, onMouseLeave: leave };
-}
-
 function SidebarNav({ onNavigate, collapsed }: { onNavigate?: () => void; collapsed?: boolean }) {
-  const hov = useNavHover();
-
   return (
     <nav className="flex flex-col gap-0.5 p-3" aria-label="App navigation">
       {(

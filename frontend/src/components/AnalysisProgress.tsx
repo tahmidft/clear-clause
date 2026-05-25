@@ -8,7 +8,9 @@ interface AnalysisProgressProps {
   variant?: "compact" | "full";
   title?: string;
   progress?: number;
+  batchLabel?: string;
   className?: string;
+  onFinishComplete?: () => void;
 }
 
 export function AnalysisProgress({
@@ -17,24 +19,26 @@ export function AnalysisProgress({
   variant = "full",
   title,
   progress,
+  batchLabel,
   className,
+  onFinishComplete,
 }: AnalysisProgressProps) {
   const [dots, setDots] = React.useState("");
   const [localPct, setLocalPct] = React.useState(0);
+  const finishCalledRef = React.useRef(false);
 
-  /* Animated dot ellipsis */
   React.useEffect(() => {
     if (!running && !finishing) return;
     const id = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 500);
     return () => clearInterval(id);
   }, [running, finishing]);
 
-  /* Simulated progress bar */
   React.useEffect(() => {
     if (!running) {
       if (finishing) setLocalPct(100);
       return;
     }
+    finishCalledRef.current = false;
     setLocalPct((p) => (p < 10 ? 10 : p));
     const id = setInterval(() => {
       setLocalPct((p) => {
@@ -47,17 +51,23 @@ export function AnalysisProgress({
   }, [running, finishing]);
 
   const pct = progress != null ? progress : localPct;
+
+  React.useEffect(() => {
+    if (!finishing || !onFinishComplete) return;
+    if (pct < 100) return;
+    if (finishCalledRef.current) return;
+    finishCalledRef.current = true;
+    const id = window.setTimeout(() => onFinishComplete(), 500);
+    return () => window.clearTimeout(id);
+  }, [finishing, pct, onFinishComplete]);
+
   const label = finishing ? "Complete" : `Analyzing${dots}`;
   const label2 = title ? `Analyzing: ${title}` : `Analyzing contract${dots}`;
 
   if (variant === "compact") {
     return (
       <div className={cn("flex items-center gap-3", className)} role="status" aria-live="polite" aria-label={label2}>
-        <FileSearch
-          className="h-5 w-5 shrink-0"
-          style={{ color: "var(--cc-accent)" }}
-          aria-hidden
-        />
+        <FileSearch className="h-5 w-5 shrink-0" style={{ color: "var(--cc-accent)" }} aria-hidden />
         <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-medium" style={{ color: "var(--cc-body)" }}>{label}</span>
@@ -103,9 +113,12 @@ export function AnalysisProgress({
             </span>
             <span className="tabular-nums text-[13px]" style={{ color: "var(--cc-muted)" }}>{Math.round(pct)}%</span>
           </div>
-          {title && (
+          {batchLabel ? (
+            <p className="text-[12px]" style={{ color: "var(--cc-muted)" }}>{batchLabel}</p>
+          ) : null}
+          {title ? (
             <p className="line-clamp-1 text-[12px]" style={{ color: "var(--cc-subtle)" }}>{title}</p>
-          )}
+          ) : null}
         </div>
       </div>
       <div className="mt-3 h-1.5 overflow-hidden rounded-full" style={{ background: "var(--cc-progress-track)" }}>
