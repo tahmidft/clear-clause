@@ -38,6 +38,14 @@ vi.mock("@/hooks/use-toast", () => ({
   toast: vi.fn(),
 }));
 
+vi.mock("@/lib/supabase", () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn(async () => ({ data: { session: null }, error: null })),
+    },
+  },
+}));
+
 describe("auth pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
