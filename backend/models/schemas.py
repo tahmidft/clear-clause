@@ -11,6 +11,13 @@ class PreferenceBase(BaseModel):
     ip_ownership: bool = True
     non_compete: bool = False
     termination_notice_days: int = Field(default=14, ge=7, le=60)
+    max_revision_rounds: int = Field(default=3, ge=0, le=20)
+    requires_deposit: bool = True
+    min_deposit_percent: int = Field(default=25, ge=0, le=100)
+    liability_cap_required: bool = True
+    accepts_broad_indemnification: bool = False
+    kill_fee_required: bool = True
+    written_scope_required: bool = True
 
 
 class PreferenceCreate(PreferenceBase):
@@ -66,12 +73,18 @@ class SectionSchema(BaseModel):
     conflicts_with_preference: bool
 
 
+ScamRisk = Literal["low", "medium", "high"]
+
+
 class AnalysisResult(BaseModel):
     sections: list[SectionSchema]
     overall_score: int = Field(ge=0, le=100)
     recommendation: Literal["accept", "reject"]
     recommendation_reason: str
     preference_conflicts: list[str]
+    likely_scam: bool = False
+    scam_risk: ScamRisk = "low"
+    scam_signals: list[str] = Field(default_factory=list)
 
 
 class AnalysisResponse(BaseModel):
@@ -84,6 +97,9 @@ class AnalysisResponse(BaseModel):
     recommendation: Literal["accept", "reject"]
     recommendation_reason: str
     preference_conflicts: list[str]
+    likely_scam: bool = False
+    scam_risk: ScamRisk = "low"
+    scam_signals: list[str] = Field(default_factory=list)
     created_at: datetime | None = None
 
 
