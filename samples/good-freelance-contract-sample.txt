@@ -1,0 +1,39 @@
+INDEPENDENT CONTRACTOR AGREEMENT
+This Independent Contractor Agreement ("Agreement") is made effective April 15, 2026, by and between Bright Harbor Studio Inc., a Washington corporation with its principal office at 1200 Pine Street, Suite 400, Seattle, WA 98101 ("Client"), and Morgan Chen, an individual doing business as Chen UX Studio ("Contractor").
+
+1. STATEMENT OF WORK
+Services are defined in Statement of Work #SOW-BH-2026-08 attached hereto, including user-flow wireframes for three (3) product areas, a high-fidelity Figma prototype, and a developer handoff package. Changes to scope require a written change order executed by both parties.
+
+2. COMPENSATION AND PAYMENT
+Total project fee: $12,500 USD. Client shall pay a non-refundable deposit of thirty percent (30%) upon execution. Forty percent (40%) is due within ten (10) business days of wireframe milestone acceptance. The remaining balance is due Net fifteen (15) days following final deliverable acceptance. Invoices are payable by ACH to Contractor's business account listed on Exhibit A. Late amounts accrue interest at one percent (1%) per month.
+
+3. REVISIONS AND ACCEPTANCE
+The project fee includes two (2) consolidated revision rounds per milestone. Additional revisions are billed at $125 per hour with Client's prior written approval. Client shall provide consolidated feedback within five (5) business days of delivery or the milestone shall be deemed accepted.
+
+4. INTELLECTUAL PROPERTY
+Upon Client's payment in full, Client receives an exclusive license to use the final deliverables in connection with its products. Contractor retains ownership of pre-existing materials, tools, and general know-how. Contractor may display completed work in its portfolio after public launch unless Client objects in writing within fourteen (14) days.
+
+5. CONFIDENTIALITY
+Each party shall protect the other's Confidential Information for three (3) years using reasonable care. Standard exclusions apply. Contractor may engage subcontractors who have executed confidentiality undertakings, with Client's consent.
+
+6. NON-SOLICITATION
+During the term and for six (6) months thereafter, neither party shall solicit the other's employees whom they met through this engagement. No non-compete restriction applies to Contractor's other clients.
+
+7. TERMINATION
+Either party may terminate upon thirty (30) days' written notice. If Client terminates without cause, Client shall pay for accepted milestones plus a kill fee of twenty-five percent (25%) of the remaining fixed fee. Contractor may terminate if undisputed invoices remain unpaid for more than fifteen (15) days after notice.
+
+8. INDEMNIFICATION; LIMITATION OF LIABILITY
+Each party shall indemnify the other only for third-party claims arising from that party's gross negligence or willful misconduct. Except for confidentiality breaches, each party's aggregate liability shall not exceed fees paid under this Agreement during the preceding twelve (12) months.
+
+9. INDEPENDENT CONTRACTOR
+Contractor is an independent contractor responsible for its own taxes, benefits, and insurance. Contractor controls the manner and means of performing the Services.
+
+10. GOVERNING LAW
+This Agreement is governed by the laws of the State of Washington. Exclusive venue: King County, Washington.
+
+SIGNATURES
+CLIENT: Bright Harbor Studio Inc.
+By: _________________________  Name: Samuel Okonkwo  Title: VP Product
+
+CONTRACTOR: Morgan Chen / Chen UX Studio
+Signature: _________________________  Date: _______________
