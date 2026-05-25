@@ -38,7 +38,7 @@ The signup screen shows Supabase errors in a toast. When **Confirm email** is en
 Common fixes:
 
 1. **Authentication → Providers → Email**: enable signup; **Confirm email** ON for production, OFF only for local/demo if you want instant sign-in without mail.
-2. **Authentication → URL configuration**: **Site URL** and **Redirect URLs** must include your app origin (local: `http://127.0.0.1:5173/**`; production: `https://clearclause.vercel.app/**`).
+2. **Authentication → URL configuration**: **Site URL** and **Redirect URLs** must include your app origin (local: `http://127.0.0.1:5173/**`; production: `https://clearclause.vercel.app/**` — see [Deployment](#deployment) for current URLs).
 3. **SMTP**: default Supabase mail is rate-limited and often goes to spam—configure custom SMTP for production (see `.cursor/skills/supabase/SKILL.md`).
 4. **`VITE_SUPABASE_ANON_KEY`**: use the **Publishable** key (`sb_publishable_…`) from **Project Settings → API** (legacy `eyJ…` anon JWT also works); never the secret / service role key.
 5. **Duplicate email**: sign in instead of signing up again.
@@ -113,31 +113,37 @@ This restarts the API, starts Vite if needed, and runs `scripts/smoke-local.py` 
 
 ### Frontend (Vercel)
 
-1. Import the `frontend` directory as a Vite project (or set **Root Directory** to `frontend` in Vercel).
-2. Set build command `npm run build` and output directory `dist`.
-3. Add environment variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (your Render API URL, e.g. `https://clearclause-api.onrender.com`).
-4. Production URL (current): `https://frontend-teal-ten-82.vercel.app`
+Project name: **`clearclause`** (team `tahmidfts-projects`). Do not use the separate empty **`frontend`** project.
+
+1. Import the repo; set **Root Directory** to `frontend`.
+2. Build command `npm run build`, output directory `dist`.
+3. Add environment variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (Render API, e.g. `https://clearclause-api.onrender.com`).
+4. **Production URLs:** `https://clearclause.vercel.app` (preferred) and `https://frontend-teal-ten-82.vercel.app` (Vercel-assigned alias). Add the subdomain under **Settings → Domains**, or run `vercel alias set <latest-prod-deployment> clearclause.vercel.app` from `frontend/`.
 5. `frontend/vercel.json` rewrites all routes to `index.html` for client-side routing.
+
+See `.cursor/skills/vercel/SKILL.md` for custom apex domains (DNS A/CNAME) and post-domain Supabase/Render updates.
 
 ### Backend (Render)
 
-1. Create a **Web Service** from this repository.
-2. Use **Root Directory** `backend`, or keep root as repo root and set:
-   - **Build command:** `cd backend && pip install -r requirements.txt`
-   - **Start command:** `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
-3. Add the same env vars as in `backend/.env.example`, plus `CORS_ORIGINS` set to your Vercel origin (e.g. `https://frontend-teal-ten-82.vercel.app,http://localhost:5173,http://127.0.0.1:5173`).
-4. From repo root with `RENDER_API_KEY` or `RENDER_DEPLOY_HOOK_URL` set: `bash scripts/render-sync-deploy.sh`
-5. Optionally use `render.yaml` as a blueprint (paths assume repo root).
+1. Create a **Web Service** named `clearclause-api` (or use `render.yaml` blueprint).
+2. **Build command:** `cd backend && pip install -r requirements.txt`
+3. **Start command:** `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+4. Add env vars from `backend/.env.example`; set `CORS_ORIGINS` to your Vercel origin(s), e.g. `https://clearclause.vercel.app,http://localhost:5173,http://127.0.0.1:5173`.
+5. Sync and deploy from repo root (requires `RENDER_API_KEY` or `RENDER_DEPLOY_HOOK_URL` in env or `backend/.env`): `bash scripts/render-sync-deploy.sh`
+6. Full stack: `bash scripts/deploy-production.sh`
+
+See `.cursor/skills/render/SKILL.md` for deploy hooks, keep-alive, and health troubleshooting.
 
 ### Keep-alive (cron-job.org)
 
 After deploy, create a free cron job:
 
-- **URL:** `https://<your-render-service>.onrender.com/health`
+- **URL:** `https://clearclause-api.onrender.com/health`
 - **Interval:** every 10 minutes
 - **Method:** GET
+- **Timeout:** at least 60 seconds
 
-This reduces cold starts on Render’s free tier.
+This reduces cold starts on Render’s free tier; it does not fix a failed deploy or suspended service.
 
 ## Pre-deploy regression checklist
 

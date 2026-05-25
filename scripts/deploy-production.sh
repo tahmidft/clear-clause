@@ -15,5 +15,7 @@ else
 fi
 
 echo "==> Production URLs"
-echo "  Frontend: https://frontend-teal-ten-82.vercel.app"
+FRONTEND_URL="${VERCEL_PRODUCTION_ORIGIN:-https://clearclause.vercel.app}"
+echo "  Frontend: ${FRONTEND_URL}"
+echo "  Frontend (Vercel alias): https://frontend-teal-ten-82.vercel.app"
 echo "  API:      https://clearclause-api.onrender.com/health"

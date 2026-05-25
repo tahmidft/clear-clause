@@ -6,7 +6,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${ROOT}/backend/.env"
 SERVICE_NAME="${RENDER_SERVICE_NAME:-clearclause-api}"
-VERCEL_ORIGIN="${VERCEL_PRODUCTION_ORIGIN:-https://frontend-teal-ten-82.vercel.app}"
+VERCEL_ORIGIN="${VERCEL_PRODUCTION_ORIGIN:-https://clearclause.vercel.app}"
 
 if [[ -f "${ENV_FILE}" ]]; then
   set -a
@@ -19,15 +19,15 @@ if [[ -n "${RENDER_DEPLOY_HOOK_URL:-}" ]]; then
   echo "==> Triggering Render deploy via hook"
   curl -fsS -X POST "${RENDER_DEPLOY_HOOK_URL}"
   echo
-  echo "Deploy triggered. Waiting for health (up to 3 min)…"
-  for _ in $(seq 1 18); do
-    if curl -fsS -m 10 "https://${SERVICE_NAME}.onrender.com/health" 2>/dev/null; then
+  echo "Deploy triggered. Waiting for health (up to 5 min, cold starts ~60–90s)…"
+  for _ in $(seq 1 30); do
+    if curl -fsS -m 60 "https://${SERVICE_NAME}.onrender.com/health" 2>/dev/null; then
       echo
       exit 0
     fi
     sleep 10
   done
-  echo "Health check still failing — check Render dashboard logs." >&2
+  echo "Health check still failing — check Render dashboard (status, logs, Manual Deploy)." >&2
   exit 1
 fi
 
@@ -96,13 +96,13 @@ echo "==> Triggering deploy"
 api -X POST "https://api.render.com/v1/services/${service_id}/deploys" \
   -d '{"clearCache":"do_not_clear"}' >/dev/null
 
-echo "Deploy started. Waiting for health…"
-for _ in $(seq 1 24); do
-  if curl -fsS -m 15 "https://${SERVICE_NAME}.onrender.com/health" 2>/dev/null; then
+echo "Deploy started. Waiting for health (cold starts may take ~60–90s)…"
+for _ in $(seq 1 30); do
+  if curl -fsS -m 60 "https://${SERVICE_NAME}.onrender.com/health" 2>/dev/null; then
     echo
     exit 0
   fi
   sleep 10
 done
-echo "Health check still failing — inspect Render logs." >&2
+echo "Health check still failing — check Render dashboard (status, logs, Manual Deploy)." >&2
 exit 1
