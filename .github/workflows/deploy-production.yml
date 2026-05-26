@@ -79,10 +79,18 @@ jobs:
         id: deploy
         if: steps.vercel.outputs.configured == 'true'
         run: |
+          set -o pipefail
           log="$(mktemp)"
           npx vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" 2>&1 | tee "${log}"
-          url="$(grep -oE 'https://clearclause-[a-z0-9]+-tahmidfts-projects\.vercel\.app' "${log}" | tail -1)"
+          url="$(grep -oE 'https://[a-z0-9.-]+\.vercel\.app' "${log}" | grep -E 'clearclause|tahmidfts-projects' | tail -1)"
+          if [ -z "${url}" ]; then
+            url="$(grep -oE 'https://clearclause-[a-z0-9-]+\.vercel\.app' "${log}" | tail -1)"
+          fi
           echo "url=${url}" >> "$GITHUB_OUTPUT"
+          if [ -z "${url}" ]; then
+            echo "Could not parse deployment URL from Vercel CLI output." >&2
+            exit 1
+          fi
       - name: Alias clearclause.vercel.app
         if: steps.vercel.outputs.configured == 'true' && steps.deploy.outputs.url != ''
         run: |

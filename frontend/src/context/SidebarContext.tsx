@@ -11,10 +11,8 @@ type SidebarContextValue = {
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem(STORAGE_KEY) !== "closed";
-  });
+  // Default expanded; persistence only applies after the user toggles collapse.
+  const [open, setOpen] = React.useState(true);
 
   React.useEffect(() => {
     localStorage.setItem(STORAGE_KEY, open ? "open" : "closed");

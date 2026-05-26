@@ -121,9 +121,26 @@ function LayoutShell() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const collapsed = !open;
   const labelsVisible = useSidebarLabelsVisible(open);
+  const prevUserIdRef = React.useRef<string | null>(null);
+
+  // Expanded sidebar after sign-in (ignore a prior "closed" session in localStorage).
+  React.useEffect(() => {
+    const uid = user?.id ?? null;
+    if (uid && uid !== prevUserIdRef.current) {
+      setOpen(true);
+      prevUserIdRef.current = uid;
+    }
+    if (!uid) prevUserIdRef.current = null;
+  }, [user?.id, setOpen]);
 
   React.useEffect(() => {
-    if (location.pathname.startsWith("/analysis/")) setOpen(false);
+    if (location.pathname.startsWith("/analysis/")) {
+      setOpen(false);
+      return;
+    }
+    if (location.pathname === "/dashboard" || location.pathname.startsWith("/settings")) {
+      setOpen(true);
+    }
   }, [location.pathname, setOpen]);
 
   const toggleTheme = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
