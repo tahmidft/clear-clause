@@ -10,6 +10,7 @@ import { BatchReviewPickerDialog, type BatchPickerItem } from "@/components/Batc
 import { ContractCard } from "@/components/ContractCard";
 import { DashboardSection } from "@/components/DashboardSection";
 import { UploadZone } from "@/components/UploadZone";
+import { cn } from "@/lib/utils";
 import { BUCKET_ORDER, type ContractBucket, contractBucket } from "@/lib/contractBuckets";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { analyzeContract, deleteContract, uploadContract } from "@/lib/api";
@@ -384,10 +385,10 @@ export default function Dashboard() {
 
       {/* Floating Upload button — only visible when upload zone is off-screen */}
       {!uploadVisible && (
-        <div className="fixed right-6 top-6 z-50 safe-top">
+        <div className="fixed-safe-tr fixed z-50">
           <Button
             type="button"
-            className="h-10 rounded-[12px] px-5 shadow-lg"
+            className="min-h-11 rounded-[12px] px-5 shadow-lg"
             onClick={() => uploadSentinelRef.current?.scrollIntoView({ behavior: "smooth" })}
           >
             Upload
@@ -409,17 +410,18 @@ export default function Dashboard() {
           My Contracts
         </h1>
         <p className="mt-1 leading-relaxed" style={{ fontSize: 13, color: "var(--cc-muted)" }}>
-          Contracts are grouped by recommendation.{" "}
-          <span className="lg:hidden">Tap</span>
-          <span className="hidden lg:inline">Hover</span> scam cards for details.
+          Contracts are grouped by recommendation. Scam alerts show risk signals on each card.
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        {statCards.map((card) => (
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {statCards.map((card, index) => (
           <div
             key={card.label}
-            className="rounded-[12px] px-[14px] py-3"
+            className={cn(
+              "min-w-0 rounded-[12px] px-[14px] py-3",
+              index === statCards.length - 1 && "col-span-2 sm:col-span-1",
+            )}
             style={{
               background: isDark ? "rgba(28,28,30,0.7)" : "#fff",
               border: isDark ? "0.5px solid rgba(255,255,255,0.08)" : "0.5px solid rgba(0,0,0,0.08)",
@@ -452,26 +454,26 @@ export default function Dashboard() {
 
       {scamCount > 0 ? (
         <div
-          className="mt-4 flex items-center justify-between gap-3 rounded-[12px] px-4 py-3"
+          className="mt-4 flex flex-col gap-3 rounded-[12px] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           style={{
             background: "rgba(255,159,10,0.08)",
             border: "0.5px solid rgba(255,159,10,0.25)",
           }}
         >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <AlertTriangle className="h-4 w-4 shrink-0" style={{ color: "#FF9F0A" }} aria-hidden />
-            <p className="text-[13px]" style={{ color: "var(--cc-body)" }}>
+          <div className="flex min-w-0 items-start gap-2.5 sm:items-center">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 sm:mt-0" style={{ color: "#FF9F0A" }} aria-hidden />
+            <p className="text-[13px] leading-relaxed" style={{ color: "var(--cc-body)" }}>
               <span style={{ color: "#FF9F0A", fontWeight: 700 }}>{scamCount}</span> contracts flagged as likely scams
               — review before accepting.
             </p>
           </div>
           <button
             type="button"
-            className="shrink-0 text-[13px] font-medium"
+            className="min-h-11 shrink-0 self-start px-2 text-[13px] font-medium sm:self-center"
             style={{ color: "#0A84FF", background: "transparent", border: "none", cursor: "pointer" }}
             onClick={() => document.getElementById("bucket-likely_scam")?.scrollIntoView({ behavior: "smooth" })}
           >
-            View →
+            View scam contracts →
           </button>
         </div>
       ) : null}
@@ -592,7 +594,7 @@ export default function Dashboard() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search contracts by file name"
-              className="w-full rounded-[10px] py-2.5 pl-9 pr-4 outline-none focus:ring-1 focus:ring-[var(--cc-accent)]"
+              className="min-h-11 w-full rounded-[10px] py-2.5 pl-9 pr-4 outline-none focus:ring-1 focus:ring-[var(--cc-accent)]"
               style={{
                 background: "var(--cc-search-bg)",
                 border: "0.5px solid var(--cc-search-border)",
@@ -611,7 +613,7 @@ export default function Dashboard() {
               <button
                 key={val}
                 type="button"
-                className="shrink-0 rounded-[20px] px-3 py-1.5 text-[13px] font-medium outline-none"
+                className="min-h-11 shrink-0 rounded-[20px] px-4 py-2 text-[13px] font-medium outline-none"
                 style={{
                   border: sortBy === val
                     ? "0.5px solid var(--cc-pill-active-border)"
@@ -638,7 +640,7 @@ export default function Dashboard() {
                 <button
                   key={opt.value}
                   type="button"
-                  className="rounded-[7px] px-[11px] py-[5px] text-[12px] font-medium outline-none"
+                  className="min-h-9 rounded-[7px] px-3 py-2 text-[12px] font-medium outline-none sm:min-h-0 sm:px-[11px] sm:py-[5px]"
                   style={{
                     background: statusFilter === opt.value ? "var(--cc-seg-active-bg)" : "transparent",
                     color: statusFilter === opt.value ? "#ffffff" : "var(--cc-seg-color)",

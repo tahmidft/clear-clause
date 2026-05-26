@@ -365,6 +365,22 @@
 
   .safe-top    { padding-top:    max(env(safe-area-inset-top,    0px), 0px); }
   .safe-bottom { padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px); }
+  .safe-x {
+    padding-left:  max(env(safe-area-inset-left,  0px), 0px);
+    padding-right: max(env(safe-area-inset-right, 0px), 0px);
+  }
+
+  /* Minimum 44×44pt touch target (Apple HIG) */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Fixed controls (FAB, etc.) respect notch / home indicator */
+  .fixed-safe-tr {
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    right: max(1rem, env(safe-area-inset-right, 0px));
+  }
 
   .touch-scroll-x {
     -webkit-overflow-scrolling: touch;
@@ -380,5 +396,14 @@
     top: 0; right: 0; bottom: 0;
     width: 2rem;
     background: linear-gradient(to left, var(--cc-bg), transparent);
+  }
+
+  /* Card lift on hover only — avoids sticky hover on touch devices */
+  @media (hover: hover) and (pointer: fine) {
+    .card-interactive:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--cc-card-hover-shadow);
+      border-color: var(--cc-card-hover-border);
+    }
   }
 }

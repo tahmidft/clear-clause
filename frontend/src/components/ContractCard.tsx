@@ -18,6 +18,7 @@ import {
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 import { isLikelyScamAnalysis } from "@/lib/contractBuckets";
 import type { Analysis, Contract } from "@/types";
 
@@ -90,7 +91,6 @@ export function ContractCard({
 }: ContractCardProps) {
   const isMobile = useIsMobile();
   const [sheetOpen, setSheetOpen] = React.useState(false);
-  const [hovered, setHovered] = React.useState(false);
 
   const score = analysis?.overall_score ?? null;
   const accept = analysis?.recommendation === "accept";
@@ -173,7 +173,7 @@ export function ContractCard({
           <SheetTrigger asChild>
             <button
               type="button"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] outline-none"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[8px] outline-none"
               style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--cc-red)", opacity: 0.5 }}
               aria-label={`Delete contract ${contract.file_name}`}
             >
@@ -208,20 +208,17 @@ export function ContractCard({
 
   return (
     <div
-      className="relative flex h-full min-h-0 flex-col overflow-hidden rounded-[14px]"
+      className={cn(
+        "relative flex h-full min-h-0 flex-col overflow-hidden rounded-[14px]",
+        !(scamFlag && !isAnalyzing && !isFinishing) && "card-interactive",
+      )}
       style={{
         background: "var(--cc-card-bg)",
         border: scamFlag && !isAnalyzing && !isFinishing
           ? "0.5px solid var(--cc-scam-border)"
-          : hovered
-          ? "0.5px solid var(--cc-card-hover-border)"
           : "0.5px solid var(--cc-card-border)",
-        boxShadow: hovered ? "var(--cc-card-hover-shadow)" : "none",
-        transform: hovered ? "translateY(-2px)" : "translateY(0)",
         transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
         {/* Title row */}
@@ -293,8 +290,8 @@ export function ContractCard({
                   likelyScam={analysis.likely_scam}
                   scamRisk={analysis.scam_risk}
                   scamSignals={analysis.scam_signals}
-                  compact
-                  className="[&_ul]:max-h-24 [&_ul]:overflow-y-auto"
+                  compact={!isMobile}
+                  className={isMobile ? undefined : "[&_ul]:max-h-24 [&_ul]:overflow-y-auto"}
                 />
               ) : null}
             </div>

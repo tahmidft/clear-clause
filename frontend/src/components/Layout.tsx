@@ -30,10 +30,12 @@ function SidebarNav({
   onNavigate,
   collapsed,
   labelsVisible,
+  largeTouch,
 }: {
   onNavigate?: () => void;
   collapsed: boolean;
   labelsVisible: boolean;
+  largeTouch?: boolean;
 }) {
   return (
     <nav className="flex flex-col gap-0.5 p-2" aria-label="App navigation">
@@ -47,8 +49,8 @@ function SidebarNav({
           key={to}
           to={to}
           className={cn(
-            "flex h-9 items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)] select-none",
-            collapsed ? "w-9 justify-center" : "gap-2.5 px-2.5",
+            "flex items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)] select-none",
+            collapsed ? "h-9 w-9 justify-center" : largeTouch ? "min-h-11 gap-2.5 px-2.5" : "h-9 gap-2.5 px-2.5",
           )}
           style={({ isActive }) => ({
             background: isActive ? "var(--cc-nav-active-bg)" : undefined,
@@ -130,6 +132,7 @@ function LayoutShell() {
   const sidebarContent = (opts: { isMobileSheet?: boolean }) => {
     const { isMobileSheet = false } = opts;
     const rail = collapsed && !isMobileSheet;
+    const largeTouch = isMobileSheet;
 
     return (
       <>
@@ -175,6 +178,7 @@ function LayoutShell() {
           onNavigate={isMobileSheet ? () => setMobileOpen(false) : undefined}
           collapsed={rail}
           labelsVisible={labelsVisible}
+          largeTouch={largeTouch}
         />
 
         <div className="mt-auto flex flex-col gap-0.5 p-2" style={{ borderTop: "0.5px solid var(--cc-sidebar-border)" }}>
@@ -191,8 +195,8 @@ function LayoutShell() {
           <button
             type="button"
             className={cn(
-              "flex h-9 items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]",
-              rail ? "w-9 justify-center" : "gap-2.5 px-2.5",
+              "flex items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]",
+              rail ? "h-9 w-9 justify-center" : largeTouch ? "min-h-11 gap-2.5 px-2.5" : "h-9 gap-2.5 px-2.5",
             )}
             style={{ color: "var(--cc-nav-inactive-color)", background: "transparent", border: "none", cursor: "pointer" }}
             onMouseEnter={(e) => {
@@ -215,8 +219,8 @@ function LayoutShell() {
           <button
             type="button"
             className={cn(
-              "flex h-9 items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2",
-              rail ? "w-9 justify-center" : "gap-2.5 px-2.5",
+              "flex items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2",
+              rail ? "h-9 w-9 justify-center" : largeTouch ? "min-h-11 gap-2.5 px-2.5" : "h-9 gap-2.5 px-2.5",
             )}
             style={{ color: "var(--cc-sign-out-color)", background: "transparent", border: "none", cursor: "pointer" }}
             onMouseEnter={(e) => {

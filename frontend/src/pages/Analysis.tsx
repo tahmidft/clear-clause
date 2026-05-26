@@ -103,7 +103,7 @@ export default function AnalysisPage() {
       <Link
         to="/dashboard"
         aria-label="Back to dashboard"
-        className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-medium no-underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
+        className="mb-6 inline-flex min-h-11 items-center gap-1.5 px-1 text-[13px] font-medium no-underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
         style={{ color: "var(--cc-back-link)" }}
       >
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
