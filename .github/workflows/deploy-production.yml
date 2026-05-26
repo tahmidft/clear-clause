@@ -79,7 +79,9 @@ jobs:
         id: deploy
         if: steps.vercel.outputs.configured == 'true'
         run: |
-          url="$(npx vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" 2>&1 | tee /dev/stderr | grep -oE 'https://clearclause-[a-z0-9]+-tahmidfts-projects\.vercel\.app' | tail -1)"
+          log="$(mktemp)"
+          npx vercel deploy --prod --yes --token="${{ secrets.VERCEL_TOKEN }}" 2>&1 | tee "${log}"
+          url="$(grep -oE 'https://clearclause-[a-z0-9]+-tahmidfts-projects\.vercel\.app' "${log}" | tail -1)"
           echo "url=${url}" >> "$GITHUB_OUTPUT"
       - name: Alias clearclause.vercel.app
         if: steps.vercel.outputs.configured == 'true' && steps.deploy.outputs.url != ''
