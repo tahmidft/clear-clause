@@ -1,10 +1,12 @@
 import * as React from "react";
 import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalysisProgress } from "@/components/AnalysisProgress";
 import { AnalysisDetailView } from "@/components/AnalysisDetailView";
+import { patchDashboardAnalysis } from "@/lib/dashboardCache";
 import { analyzeContract, getAnalysis, getContracts } from "@/lib/api";
 import type { Analysis, Contract } from "@/types";
 
@@ -12,6 +14,7 @@ type AnalyzePhase = "idle" | "running" | "finishing";
 
 export default function AnalysisPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const [contract, setContract] = React.useState<Contract | null>(null);
   const [analysis, setAnalysis] = React.useState<Analysis | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -19,26 +22,40 @@ export default function AnalysisPage() {
   const [analysisError, setAnalysisError] = React.useState(false);
   const pendingAnalysisRef = React.useRef<Analysis | null>(null);
 
+  const syncDashboard = React.useCallback(
+    (contractId: string, value: Analysis | null) => {
+      patchDashboardAnalysis(queryClient, contractId, value);
+    },
+    [queryClient],
+  );
+
   const applyPendingAnalysis = React.useCallback(() => {
     const pending = pendingAnalysisRef.current;
     pendingAnalysisRef.current = null;
-    if (pending) setAnalysis(pending);
-    setAnalyzePhase("idle");
-  }, []);
-
-  const runAnalyze = React.useCallback(async (contractId: string) => {
-    setAnalyzePhase("running");
-    setAnalysisError(false);
-    try {
-      const result = await analyzeContract(contractId);
-      pendingAnalysisRef.current = result;
-      setAnalyzePhase("finishing");
-    } catch {
-      pendingAnalysisRef.current = null;
-      setAnalysisError(true);
-      setAnalyzePhase("idle");
+    if (pending) {
+      setAnalysis(pending);
+      if (id) syncDashboard(id, pending);
     }
-  }, []);
+    setAnalyzePhase("idle");
+  }, [id, syncDashboard]);
+
+  const runAnalyze = React.useCallback(
+    async (contractId: string) => {
+      setAnalyzePhase("running");
+      setAnalysisError(false);
+      try {
+        const result = await analyzeContract(contractId);
+        pendingAnalysisRef.current = result;
+        syncDashboard(contractId, result);
+        setAnalyzePhase("finishing");
+      } catch {
+        pendingAnalysisRef.current = null;
+        setAnalysisError(true);
+        setAnalyzePhase("idle");
+      }
+    },
+    [syncDashboard],
+  );
 
   React.useEffect(() => {
     if (!id) return;
@@ -62,6 +79,7 @@ export default function AnalysisPage() {
           return;
         }
         setAnalysis(a);
+        syncDashboard(id, a);
       } catch {
         setContract(null);
         setAnalysis(null);
@@ -72,7 +90,7 @@ export default function AnalysisPage() {
     return () => {
       cancelled = true;
     };
-  }, [id, runAnalyze]);
+  }, [id, runAnalyze, syncDashboard]);
 
   if (!id) {
     return null;
@@ -82,18 +100,16 @@ export default function AnalysisPage() {
 
   return (
     <div className="min-w-0">
-      <Link
-        to="/dashboard"
-        className="mb-6 inline-flex min-h-11 items-center gap-1.5 rounded-[10px] px-2 py-1 text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
-        style={{
-          color: "var(--cc-back-link)",
-          transition: "opacity 0.2s ease",
-        }}
-        aria-label="Back to dashboard"
+      <Button
+        asChild
+        variant="default"
+        className="mb-6 min-h-11 gap-1.5 rounded-[12px] px-4 text-[15px] font-medium"
       >
-        <ArrowLeft className="h-4 w-4" aria-hidden />
-        Back to dashboard
-      </Link>
+        <Link to="/dashboard" aria-label="Back to dashboard">
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+          Back to dashboard
+        </Link>
+      </Button>
 
       {loading ? (
         <div className="space-y-4" aria-busy="true" aria-label="Loading analysis">
@@ -108,7 +124,9 @@ export default function AnalysisPage() {
           </div>
         </div>
       ) : !contract ? (
-        <p className="text-[17px]" style={{ color: "var(--cc-muted)" }}>We could not find that contract.</p>
+        <p className="text-[17px]" style={{ color: "var(--cc-muted)" }}>
+          We could not find that contract.
+        </p>
       ) : showProgress ? (
         <div className="py-12">
           <AnalysisProgress

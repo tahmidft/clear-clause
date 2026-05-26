@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useLocation } from "react-router-dom";
 import { AlertCircle, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +24,8 @@ type ProgressSession = {
 };
 
 export default function Dashboard() {
+  const location = useLocation();
+  const prevPathRef = React.useRef(location.pathname);
   const {
     contracts,
     analyses,
@@ -36,6 +39,15 @@ export default function Dashboard() {
     invalidate,
     retry,
   } = useDashboardData();
+
+  // Returning from analysis view: refetch so buckets match server (backup if cache patch missed).
+  React.useEffect(() => {
+    const prev = prevPathRef.current;
+    prevPathRef.current = location.pathname;
+    if (location.pathname === "/dashboard" && prev.startsWith("/analysis/")) {
+      void invalidate();
+    }
+  }, [location.pathname, invalidate]);
 
   const [uploading, setUploading] = React.useState(false);
   const [batchMode, setBatchMode] = React.useState(false);
@@ -101,7 +113,7 @@ export default function Dashboard() {
         });
       }
     },
-    [contracts, patchAnalysis],
+    [contracts, patchAnalysis, invalidate],
   );
 
   const validateFile = (file: File): boolean => {

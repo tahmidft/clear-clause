@@ -1,9 +1,15 @@
+import * as React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAnalysis, getContracts } from "@/lib/api";
+import {
+  DASHBOARD_ANALYSES_KEY,
+  DASHBOARD_CONTRACTS_KEY,
+  invalidateDashboardData,
+  patchDashboardAnalysis,
+} from "@/lib/dashboardCache";
 import type { Analysis, Contract } from "@/types";
 
-export const DASHBOARD_CONTRACTS_KEY = ["dashboard", "contracts"] as const;
-export const DASHBOARD_ANALYSES_KEY = ["dashboard", "analyses"] as const;
+export { DASHBOARD_ANALYSES_KEY, DASHBOARD_CONTRACTS_KEY };
 
 const ANALYSIS_CONCURRENCY = 4;
 
@@ -66,13 +72,12 @@ export function useDashboardData() {
   };
 
   const patchAnalysis = (contractId: string, analysis: Analysis | null) => {
-    setAnalyses((prev) => ({ ...prev, [contractId]: analysis }));
+    patchDashboardAnalysis(queryClient, contractId, analysis);
   };
 
-  const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: DASHBOARD_CONTRACTS_KEY });
-    await queryClient.invalidateQueries({ queryKey: DASHBOARD_ANALYSES_KEY });
-  };
+  const invalidate = React.useCallback(async () => {
+    await invalidateDashboardData(queryClient);
+  }, [queryClient]);
 
   const retry = () => {
     void contractsQuery.refetch();
