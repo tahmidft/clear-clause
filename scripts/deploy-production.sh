@@ -6,7 +6,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
 echo "==> Vercel production (frontend/) — remote build so VITE_* secrets are inlined"
-DEPLOY_URL="$(cd frontend && npx vercel deploy --prod --yes 2>&1 | tee /dev/stderr | grep -oE 'https://clearclause-[a-z0-9]+-tahmidfts-projects\.vercel\.app' | tail -1)"
+DEPLOY_LOG="$(mktemp)"
+trap 'rm -f "${DEPLOY_LOG}"' EXIT
+(cd frontend && npx vercel deploy --prod --yes 2>&1 | tee "${DEPLOY_LOG}")
+DEPLOY_URL="$(grep -oE 'https://clearclause-[a-z0-9]+-tahmidfts-projects\.vercel\.app' "${DEPLOY_LOG}" | tail -1)"
 if [[ -n "${DEPLOY_URL}" ]]; then
   echo "==> Alias clearclause.vercel.app → ${DEPLOY_URL}"
   (cd frontend && npx vercel alias set "${DEPLOY_URL#https://}" clearclause.vercel.app) || true
