@@ -5,8 +5,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT}"
 
-echo "==> Vercel production (frontend/)"
-(cd frontend && vercel --prod --yes)
+echo "==> Vercel production (frontend/) — remote build so VITE_* secrets are inlined"
+DEPLOY_URL="$(cd frontend && npx vercel deploy --prod --yes 2>&1 | tee /dev/stderr | grep -oE 'https://clearclause-[a-z0-9]+-tahmidfts-projects\.vercel\.app' | tail -1)"
+if [[ -n "${DEPLOY_URL}" ]]; then
+  echo "==> Alias clearclause.vercel.app → ${DEPLOY_URL}"
+  (cd frontend && npx vercel alias set "${DEPLOY_URL#https://}" clearclause.vercel.app) || true
+fi
 
 if [[ -n "${RENDER_API_KEY:-}" || -n "${RENDER_DEPLOY_HOOK_URL:-}" ]]; then
   bash "${ROOT}/scripts/render-sync-deploy.sh"
