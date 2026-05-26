@@ -26,16 +26,20 @@ Freelancers often sign client agreements without spotting harsh payment terms, o
 | **API** | [https://clearclause-api.onrender.com](https://clearclause-api.onrender.com) |
 | **Health** | `GET /health` → `{"status":"ok"}` |
 
-**Try it without your own contract** — sample files live in [`samples/`](samples/):
+---
 
-| Sample | File | What to expect |
-|--------|------|----------------|
+## 🧪 Try with sample contracts
+
+No contract handy? **Sign in** at the [live demo](https://clearclause.vercel.app), open **Dashboard**, and upload a `.docx` from the repo [`samples/`](samples/) folder (clone locally or download from GitHub).
+
+| Sample | File | Expected outcome |
+|--------|------|------------------|
 | Good | `good-freelance-contract-sample.docx` | High score, **accept** |
-| Bad (harsh) | `bad-freelance-contract-sample.docx` | Low score, **reject**, preference conflicts |
-| Long | `long-freelance-contract-sample.docx` | Stress-tests long-document parsing |
-| Scam | `scam-freelance-contract-sample.docx` | **`likely_scam`**, high **scam_risk**, concrete **scam_signals** |
+| Bad | `bad-freelance-contract-sample.docx` | **Reject**, preference conflicts |
+| Long | `long-freelance-contract-sample.docx` | Long-document parsing test |
+| Scam | `scam-freelance-contract-sample.docx` | **`likely_scam`**, high **scam_risk** |
 
-See [`samples/README.md`](samples/README.md) for clause-level expectations.
+Clause-level detail: [`samples/README.md`](samples/README.md).
 
 ---
 
