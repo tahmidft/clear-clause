@@ -98,7 +98,7 @@ async function authHeaders(): Promise<HeadersInit> {
   };
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000;
+const DEFAULT_TIMEOUT_MS = 45_000;
 const ANALYSIS_TIMEOUT_MS = 120_000;
 
 async function requestJson<T>(
@@ -106,7 +106,7 @@ async function requestJson<T>(
   init: RequestInit = {},
   options: { skipErrorToast?: boolean; signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<T> {
-  const retries = (init.method ?? "GET").toUpperCase() === "GET" ? 2 : 0;
+  const retries = (init.method ?? "GET").toUpperCase() === "GET" ? 3 : 0;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let attempt = 0;
   let res: Response | null = null;
@@ -142,7 +142,7 @@ async function requestJson<T>(
         }
         throw new ApiError(description, 0);
       }
-      await new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)));
+      await new Promise((resolve) => setTimeout(resolve, Math.min(2000 * (attempt + 1), 8000)));
       attempt += 1;
     }
   }

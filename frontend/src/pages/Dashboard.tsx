@@ -287,6 +287,13 @@ export default function Dashboard() {
 
   const analysisBusy = Boolean(progressSession) || analyzingIds.size > 0 || uploading;
   const showInitialSkeleton = isLoading && contracts.length === 0;
+  // Show a "waking up" hint if we've been loading for more than 5 seconds
+  const [slowLoad, setSlowLoad] = React.useState(false);
+  React.useEffect(() => {
+    if (!showInitialSkeleton) { setSlowLoad(false); return; }
+    const t = setTimeout(() => setSlowLoad(true), 5000);
+    return () => clearTimeout(t);
+  }, [showInitialSkeleton]);
   const loadErrorMessage =
     error instanceof Error
       ? error.message
@@ -487,10 +494,17 @@ export default function Dashboard() {
         ) : null}
 
         {showInitialSkeleton ? (
-          <div className="grid gap-5 sm:grid-cols-2">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-48 rounded-[14px]" />
-            ))}
+          <div>
+            {slowLoad && (
+              <p className="mb-4 text-[13px]" style={{ color: "var(--cc-muted)" }} role="status" aria-live="polite">
+                Server is waking up — this takes up to 60s on first load…
+              </p>
+            )}
+            <div className="grid gap-5 sm:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-48 rounded-[14px]" />
+              ))}
+            </div>
           </div>
         ) : contracts.length === 0 ? (
           <div
