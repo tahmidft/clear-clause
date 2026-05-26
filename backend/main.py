@@ -67,3 +67,30 @@ async def security_headers_middleware(request: Request, call_next):
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get("/health/config")
+def config_check():
+    """Non-sensitive diagnostics: which env vars are configured (no values exposed)."""
+    s = get_settings()
+    try:
+        import httpx as _httpx
+        r = _httpx.get(f"{s.supabase_url.rstrip('/')}/auth/v1/health", timeout=5.0)
+        supabase_reachable = True
+        supabase_status = r.status_code
+    except Exception as exc:
+        supabase_reachable = False
+        supabase_status = f"{type(exc).__name__}: {exc}"
+
+    return {
+        "supabase_url_set": bool(s.supabase_url),
+        "supabase_url_prefix": (s.supabase_url[:20] + "…") if s.supabase_url else None,
+        "supabase_anon_key_set": bool(s.supabase_anon_key),
+        "supabase_anon_key_prefix": s.supabase_anon_key[:12] + "…" if s.supabase_anon_key else None,
+        "gemini_api_key_set": bool(s.gemini_api_key),
+        "database_url_set": bool(s.database_url),
+        "cors_origins": s.cors_origins,
+        "app_env": s.app_env,
+        "supabase_auth_reachable": supabase_reachable,
+        "supabase_auth_status": supabase_status,
+    }

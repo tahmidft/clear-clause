@@ -39,7 +39,7 @@ def get_current_user_id(
         # transport-level exception so it never escapes as an unhandled 500.
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Unable to reach authentication service",
+            detail=f"Unable to reach authentication service ({type(exc).__name__})",
         ) from exc
     if r.status_code != 200:
         raise HTTPException(
