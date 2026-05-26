@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 import { BrandIcon } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { ApiError } from "@/lib/api";
 import { resolvePostLoginPath } from "@/lib/postLoginPath";
 import { supabase } from "@/lib/supabase";
 
@@ -135,14 +134,14 @@ export default function Login() {
       setSubmitting(false);
       return;
     }
-    try {
-      navigate(await resolvePostLoginPath("/dashboard"), { replace: true });
-    } catch (e) {
-      const msg = e instanceof ApiError ? e.message : "We could not reach the server. Check your connection and try again.";
-      setPasswordError(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    // Navigate immediately — don't block on an API call that can fail during cold starts.
+    // The dashboard/onboarding redirect check happens in the background.
+    setSubmitting(false);
+    navigate("/dashboard", { replace: true });
+    // Fire-and-forget: redirect to onboarding if preferences not yet set.
+    resolvePostLoginPath("/dashboard").then((path) => {
+      if (path !== "/dashboard") navigate(path, { replace: true });
+    }).catch(() => {/* ignore */});
   };
 
   return (
