@@ -26,6 +26,10 @@ vi.mock("@/lib/api", () => ({
   getPreferences: vi.fn(async () => null),
 }));
 
+vi.mock("@/lib/postLoginPath", () => ({
+  resolvePostLoginPath: vi.fn(async () => "/dashboard"),
+}));
+
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return {
@@ -68,12 +72,12 @@ describe("auth pages", () => {
     expect(screen.getByRole("button", { name: /sign up/i })).toBeInTheDocument();
   });
 
-  it("shows signed-in choices instead of skipping the login form", () => {
+  it("redirects when already signed in", async () => {
     authMock.user = { id: "u1", email: "you@example.com" } as User;
     render(React.createElement(MemoryRouter, null, React.createElement(Login)));
-    expect(screen.getByRole("heading", { name: /you're signed in/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^continue$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /sign out/i })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/dashboard", { replace: true });
+    });
   });
 
   it("validates login form fields", () => {

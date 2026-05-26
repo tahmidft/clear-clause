@@ -4,6 +4,7 @@ import { Loader2, MailCheck } from "lucide-react";
 import { BrandIcon } from "@/components/BrandLogo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import { resolvePostLoginPath } from "@/lib/postLoginPath";
 import { toast } from "@/hooks/use-toast";
 
 const DUPLICATE_EMAIL_MARKER = "already exists";
@@ -57,7 +58,7 @@ function AuthCard({ children }: { children: React.ReactNode }) {
 }
 
 export default function Signup() {
-  const { signUp, resendConfirmation, signOut, user, loading } = useAuth();
+  const { signUp, resendConfirmation, user, loading } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = React.useState("");
@@ -67,8 +68,23 @@ export default function Signup() {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmationPending, setConfirmationPending] = React.useState<string | null>(null);
   const [resending, setResending] = React.useState(false);
+  const [redirecting, setRedirecting] = React.useState(false);
 
-  if (loading) {
+  React.useEffect(() => {
+    if (loading || !user) return;
+    let cancelled = false;
+    setRedirecting(true);
+    void resolvePostLoginPath("/dashboard").then((path) => {
+      if (!cancelled) navigate(path, { replace: true });
+    }).finally(() => {
+      if (!cancelled) setRedirecting(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, loading, navigate]);
+
+  if (loading || (user && redirecting)) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--cc-bg)" }} role="status" aria-live="polite" aria-label="Loading">
         <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cc-accent)" }} aria-hidden />
@@ -78,27 +94,8 @@ export default function Signup() {
 
   if (user) {
     return (
-      <div className="safe-bottom flex min-h-[100dvh] items-center justify-center px-4 py-8 sm:py-12" style={{ background: "var(--cc-bg)" }}>
-        <AuthCard>
-          <div className="flex justify-center">
-            <BrandIcon size={32} className="shrink-0" />
-          </div>
-          <h1 className="mt-5 text-center" style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--cc-title)" }}>
-            You&apos;re already signed in
-          </h1>
-          <p className="mt-2 break-all text-center text-[13px]" style={{ color: "var(--cc-muted)" }}>{user.email}</p>
-          <p className="mt-3 text-center text-[13px]" style={{ color: "var(--cc-muted)" }}>
-            To create a new account, sign out first. Otherwise continue to your dashboard.
-          </p>
-          <div className="mt-6 flex flex-col gap-2">
-            <Button type="button" className="min-h-11 w-full rounded-[12px] text-[15px]" onClick={() => void navigate("/dashboard", { replace: true })}>
-              Go to dashboard
-            </Button>
-            <Button type="button" variant="outline" className="min-h-11 w-full rounded-[12px] text-[15px]" onClick={async () => { await signOut(); navigate("/signup", { replace: true }); }}>
-              Sign out
-            </Button>
-          </div>
-        </AuthCard>
+      <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--cc-bg)" }} role="status" aria-live="polite" aria-label="Loading">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cc-accent)" }} aria-hidden />
       </div>
     );
   }

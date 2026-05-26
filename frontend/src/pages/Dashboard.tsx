@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Search, Upload } from "lucide-react";
+import { AlertCircle, Search, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalysisCompleteDialog } from "@/components/AnalysisCompleteDialog";
@@ -28,9 +28,13 @@ export default function Dashboard() {
     analyses,
     isLoading,
     isFetching,
+    isAnalysesLoading,
+    isError,
+    error,
     setContracts,
     patchAnalysis,
     invalidate,
+    retry,
   } = useDashboardData();
 
   const [uploading, setUploading] = React.useState(false);
@@ -283,6 +287,10 @@ export default function Dashboard() {
 
   const analysisBusy = Boolean(progressSession) || analyzingIds.size > 0 || uploading;
   const showInitialSkeleton = isLoading && contracts.length === 0;
+  const loadErrorMessage =
+    error instanceof Error
+      ? error.message
+      : "We could not load your contracts. The server may be waking up — try again.";
 
   const statusOptions = [
     { value: "all", label: "All" },
@@ -445,9 +453,36 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {isFetching && !showInitialSkeleton ? (
+        {isError && !showInitialSkeleton ? (
+          <div
+            className="mb-6 flex flex-col gap-3 rounded-[14px] px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{
+              border: "0.5px solid var(--cc-input-border-err)",
+              background: "var(--cc-pref-row-bg)",
+            }}
+            role="alert"
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "var(--cc-red)" }} aria-hidden />
+              <p className="text-[14px] leading-relaxed" style={{ color: "var(--cc-body)" }}>
+                {loadErrorMessage}
+              </p>
+            </div>
+            <Button type="button" variant="outline" className="shrink-0" onClick={() => retry()}>
+              Try again
+            </Button>
+          </div>
+        ) : null}
+
+        {isFetching && !showInitialSkeleton && !isError ? (
           <p className="mb-4 text-sm" style={{ color: "var(--cc-muted)" }} role="status" aria-live="polite">
             Refreshing…
+          </p>
+        ) : null}
+
+        {isAnalysesLoading && contracts.length > 0 && !isError ? (
+          <p className="mb-4 text-sm" style={{ color: "var(--cc-muted)" }} role="status" aria-live="polite">
+            Loading analysis scores…
           </p>
         ) : null}
 
