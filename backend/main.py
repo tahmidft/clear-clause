@@ -1,7 +1,11 @@
+import logging
+
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
+
+logger = logging.getLogger(__name__)
 
 from cors_helpers import with_loopback_aliases
 from config import get_settings
@@ -36,6 +40,16 @@ app.include_router(preferences.router, prefix="/preferences", tags=["preferences
 async def sqlalchemy_error_handler(_request: Request, exc: SQLAlchemyError) -> JSONResponse:
     http_exc = http_exception_from_sqlalchemy(exc, context="processing your request")
     return JSONResponse(status_code=http_exc.status_code, content={"detail": http_exc.detail})
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Last-resort handler — ensures all 500s are JSON and pass through CORSMiddleware."""
+    logger.exception("Unhandled exception for %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected server error occurred. Please try again."},
+    )
 
 
 @app.middleware("http")

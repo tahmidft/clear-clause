@@ -34,7 +34,9 @@ def get_current_user_id(
     url = f"{s.supabase_url.rstrip('/')}/auth/v1/user"
     try:
         r = httpx.get(url, headers=get_supabase_headers(token), timeout=15.0)
-    except httpx.RequestError as exc:
+    except Exception as exc:
+        # Catch httpx.RequestError, ssl.SSLError, httpx.InvalidURL, and any other
+        # transport-level exception so it never escapes as an unhandled 500.
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Unable to reach authentication service",
