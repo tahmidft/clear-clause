@@ -1,8 +1,8 @@
 import * as React from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { LayoutDashboard, LogOut, Menu, Moon, PanelLeft, PanelLeftClose, Settings, Sun } from "lucide-react";
 import { BrandIcon } from "@/components/BrandLogo";
-import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
+import { clearSidebarPreference, SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "next-themes";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
@@ -116,32 +116,20 @@ function LayoutShell() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { setTheme, resolvedTheme } = useTheme();
-  const { open, toggle, setOpen } = useSidebar();
-  const location = useLocation();
+  const { open, toggle, expandOnLogin } = useSidebar();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const collapsed = !open;
   const labelsVisible = useSidebarLabelsVisible(open);
   const prevUserIdRef = React.useRef<string | null>(null);
 
-  // Expanded sidebar after sign-in (ignore a prior "closed" session in localStorage).
   React.useEffect(() => {
     const uid = user?.id ?? null;
     if (uid && uid !== prevUserIdRef.current) {
-      setOpen(true);
+      expandOnLogin();
       prevUserIdRef.current = uid;
     }
     if (!uid) prevUserIdRef.current = null;
-  }, [user?.id, setOpen]);
-
-  React.useEffect(() => {
-    if (location.pathname.startsWith("/analysis/")) {
-      setOpen(false);
-      return;
-    }
-    if (location.pathname === "/dashboard" || location.pathname.startsWith("/settings")) {
-      setOpen(true);
-    }
-  }, [location.pathname, setOpen]);
+  }, [user?.id, expandOnLogin]);
 
   const toggleTheme = () => setTheme(resolvedTheme === "dark" ? "light" : "dark");
   const isDark = resolvedTheme === "dark";
@@ -249,6 +237,7 @@ function LayoutShell() {
             onClick={async () => {
               if (isMobileSheet) setMobileOpen(false);
               await signOut();
+              clearSidebarPreference();
               navigate("/login", { replace: true });
             }}
             aria-label="Sign out of ClearClause"

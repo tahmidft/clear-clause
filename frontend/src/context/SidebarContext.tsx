@@ -1,26 +1,57 @@
 import * as React from "react";
 
-const STORAGE_KEY = "clearclause-sidebar-open";
+export const STORAGE_KEY = "clearclause-sidebar-open";
+
+function readStoredOpen(): boolean | null {
+  if (typeof sessionStorage === "undefined") return null;
+  const v = sessionStorage.getItem(STORAGE_KEY);
+  if (v === "open") return true;
+  if (v === "closed") return false;
+  return null;
+}
+
+function writeStoredOpen(open: boolean) {
+  sessionStorage.setItem(STORAGE_KEY, open ? "open" : "closed");
+}
+
+export function clearSidebarPreference() {
+  sessionStorage.removeItem(STORAGE_KEY);
+}
 
 type SidebarContextValue = {
   open: boolean;
   setOpen: (open: boolean) => void;
   toggle: () => void;
+  expandOnLogin: () => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextValue | null>(null);
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
-  // Default expanded; persistence only applies after the user toggles collapse.
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpenState] = React.useState(() => readStoredOpen() ?? true);
 
-  React.useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, open ? "open" : "closed");
-  }, [open]);
+  const setOpen = React.useCallback((next: boolean) => {
+    writeStoredOpen(next);
+    setOpenState(next);
+  }, []);
 
-  const toggle = React.useCallback(() => setOpen((v) => !v), []);
+  const toggle = React.useCallback(() => {
+    setOpenState((v) => {
+      const next = !v;
+      writeStoredOpen(next);
+      return next;
+    });
+  }, []);
 
-  const value = React.useMemo(() => ({ open, setOpen, toggle }), [open, toggle]);
+  const expandOnLogin = React.useCallback(() => {
+    clearSidebarPreference();
+    setOpenState(true);
+  }, []);
+
+  const value = React.useMemo(
+    () => ({ open, setOpen, toggle, expandOnLogin }),
+    [open, setOpen, toggle, expandOnLogin],
+  );
 
   return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 }

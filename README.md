@@ -6,8 +6,6 @@
 [![Tech Stack](https://img.shields.io/badge/stack-React%20%7C%20FastAPI%20%7C%20Supabase%20%7C%20Gemini-0f766e?style=for-the-badge)](#-tech-stack)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6b7280?style=for-the-badge)](LICENSE)
 
-<!-- screenshot: dashboard -->
-
 ---
 
 ## 📋 Overview
@@ -384,10 +382,29 @@ Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ## 📸 Screenshots
 
-<!-- screenshot: dashboard-dark -->
-<!-- screenshot: dashboard-light -->
-<!-- screenshot: analysis-view -->
-<!-- screenshot: preferences -->
+![Dashboard (dark mode)](docs/screenshots/dashboard-dark.png)
+
+*Dashboard with stats, upload, preferences, and contract filters.*
+
+![Contract list buckets](docs/screenshots/dashboard-contract-buckets.png)
+
+*Contracts grouped by accept, reject, and scam risk.*
+
+![Analysis — good contract](docs/screenshots/analysis-good-contract.png)
+
+*Section-by-section analysis with payment terms and overall accept (score 85).*
+
+![Analysis summary — accept](docs/screenshots/analysis-summary-accept.png)
+
+*Summary card recommending accept, including preference conflicts.*
+
+![Analysis summary — reject](docs/screenshots/analysis-summary-reject.png)
+
+*Summary card for a weak contract with reject guidance (score 30).*
+
+![Scam analysis — reject](docs/screenshots/analysis-scam-reject.png)
+
+*High-risk scam contract flagged for reject (score 10).*
 
 ---
 

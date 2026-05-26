@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/context/AuthContext";
+import { clearSidebarPreference } from "@/context/SidebarContext";
 import { usePreferences } from "@/context/PreferencesContext";
 import { savePreferences } from "@/lib/api";
 import type { Preference } from "@/types";
@@ -202,7 +203,11 @@ export default function Settings() {
           }}
           onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--cc-reject-bg)"; }}
           onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
-          onClick={async () => { await signOut(); navigate("/login", { replace: true }); }}
+          onClick={async () => {
+            await signOut();
+            clearSidebarPreference();
+            navigate("/login", { replace: true });
+          }}
           aria-label="Sign out of ClearClause"
         >
           Sign out
