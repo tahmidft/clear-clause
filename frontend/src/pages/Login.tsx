@@ -69,35 +69,21 @@ export default function Login() {
   const [submitting, setSubmitting] = React.useState(false);
   const [needsConfirmation, setNeedsConfirmation] = React.useState(false);
   const [resending, setResending] = React.useState(false);
-  const [redirecting, setRedirecting] = React.useState(false);
-
   React.useEffect(() => {
     if (prefilledEmail) setEmail(prefilledEmail);
   }, [prefilledEmail]);
 
+  // Already signed in: go to dashboard immediately; preferences check is non-blocking.
   React.useEffect(() => {
     if (loading || !user) return;
-    let cancelled = false;
-    setRedirecting(true);
-    void resolvePostLoginPath(from).then((path) => {
-      if (!cancelled) navigate(path, { replace: true });
-    }).finally(() => {
-      if (!cancelled) setRedirecting(false);
-    });
-    return () => {
-      cancelled = true;
-    };
+    const target = from.startsWith("/") ? from : "/dashboard";
+    navigate(target, { replace: true });
+    resolvePostLoginPath(target).then((path) => {
+      if (path !== target) navigate(path, { replace: true });
+    }).catch(() => {/* ignore */});
   }, [user, loading, navigate, from]);
 
-  if (loading || (user && redirecting)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--cc-bg)" }} role="status" aria-live="polite" aria-label="Loading">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cc-accent)" }} aria-hidden />
-      </div>
-    );
-  }
-
-  if (user) {
+  if (loading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--cc-bg)" }} role="status" aria-live="polite" aria-label="Loading">
         <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cc-accent)" }} aria-hidden />

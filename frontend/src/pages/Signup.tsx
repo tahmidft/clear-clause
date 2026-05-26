@@ -68,31 +68,15 @@ export default function Signup() {
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmationPending, setConfirmationPending] = React.useState<string | null>(null);
   const [resending, setResending] = React.useState(false);
-  const [redirecting, setRedirecting] = React.useState(false);
-
   React.useEffect(() => {
     if (loading || !user) return;
-    let cancelled = false;
-    setRedirecting(true);
-    void resolvePostLoginPath("/dashboard").then((path) => {
-      if (!cancelled) navigate(path, { replace: true });
-    }).finally(() => {
-      if (!cancelled) setRedirecting(false);
-    });
-    return () => {
-      cancelled = true;
-    };
+    navigate("/dashboard", { replace: true });
+    resolvePostLoginPath("/dashboard").then((path) => {
+      if (path !== "/dashboard") navigate(path, { replace: true });
+    }).catch(() => {/* ignore */});
   }, [user, loading, navigate]);
 
-  if (loading || (user && redirecting)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--cc-bg)" }} role="status" aria-live="polite" aria-label="Loading">
-        <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cc-accent)" }} aria-hidden />
-      </div>
-    );
-  }
-
-  if (user) {
+  if (loading || user) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ background: "var(--cc-bg)" }} role="status" aria-live="polite" aria-label="Loading">
         <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--cc-accent)" }} aria-hidden />
