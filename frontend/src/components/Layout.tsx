@@ -6,33 +6,33 @@ import { SidebarProvider, useSidebar } from "@/context/SidebarContext";
 import { useTheme } from "next-themes";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/context/AuthContext";
-import { useWakeServer } from "@/hooks/useWakeServer";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_WIDTH_OPEN = "16rem";
 const SIDEBAR_WIDTH_COLLAPSED = "3.25rem";
 
-function WakeBanner({ visible }: { visible: boolean }) {
-  if (!visible) return null;
+function SidebarLabel({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) {
   return (
-    <div
-      className="border-b px-4 py-2.5 text-center text-[13px]"
+    <span
+      aria-hidden={collapsed}
       style={{
-        borderColor: "rgba(255,159,10,0.4)",
-        background: "rgba(255,159,10,0.1)",
-        color: "var(--cc-body)",
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        maxWidth: collapsed ? 0 : "12rem",
+        opacity: collapsed ? 0 : 1,
+        transition: "max-width 220ms ease, opacity 150ms ease",
+        display: "block",
       }}
-      role="status"
-      aria-live="polite"
     >
-      Server is waking up, this may take 30 seconds…
-    </div>
+      {children}
+    </span>
   );
 }
 
 function SidebarNav({ onNavigate, collapsed }: { onNavigate?: () => void; collapsed?: boolean }) {
+  const c = collapsed ?? false;
   return (
-    <nav className={cn("flex flex-col gap-0.5", collapsed ? "items-center p-2" : "p-3")} aria-label="App navigation">
+    <nav className="flex flex-col gap-0.5 p-2" aria-label="App navigation">
       {(
         [
           { to: "/dashboard", label: "My Contracts", Icon: LayoutDashboard },
@@ -42,13 +42,16 @@ function SidebarNav({ onNavigate, collapsed }: { onNavigate?: () => void; collap
         <NavLink
           key={to}
           to={to}
-          className={cn(
-            "flex min-h-[38px] items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)] select-none transition-colors duration-200",
-            collapsed ? "h-9 w-9 justify-center px-0 py-0" : "gap-2.5 px-[10px] py-[9px]",
-          )}
+          className="flex min-h-[38px] items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)] select-none"
           style={({ isActive }) => ({
             background: isActive ? "var(--cc-nav-active-bg)" : undefined,
             color: isActive ? "var(--cc-nav-active-color)" : "var(--cc-nav-inactive-color)",
+            padding: c ? "0" : "9px 10px",
+            gap: c ? "0" : "10px",
+            justifyContent: c ? "center" : undefined,
+            width: c ? "2.25rem" : undefined,
+            height: c ? "2.25rem" : undefined,
+            transition: "background 150ms ease, padding 220ms ease, width 220ms ease",
           })}
           onMouseEnter={(e) => { if (!e.currentTarget.style.background.includes("nav-active")) { e.currentTarget.style.background = "var(--cc-nav-hover-bg)"; } }}
           onMouseLeave={(e) => {
@@ -56,11 +59,11 @@ function SidebarNav({ onNavigate, collapsed }: { onNavigate?: () => void; collap
             if (!isActive) e.currentTarget.style.background = "";
           }}
           onClick={onNavigate}
-          title={collapsed ? label : undefined}
+          title={c ? label : undefined}
           aria-label={label}
         >
           <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden />
-          {!collapsed ? <span>{label}</span> : null}
+          <SidebarLabel collapsed={c}>{label}</SidebarLabel>
         </NavLink>
       ))}
     </nav>
@@ -100,7 +103,6 @@ function LayoutShell() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { setTheme, resolvedTheme } = useTheme();
-  const { isWaking } = useWakeServer();
   const { open, toggle, setOpen } = useSidebar();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -119,48 +121,46 @@ function LayoutShell() {
 
     return (
       <>
+        {/* Header — always h-[52px], toggle button never moves */}
         <div
-          className={cn(
-            "flex shrink-0",
-            iconOnly
-              ? "flex-col items-center gap-1 border-b py-2"
-              : "h-[52px] items-center justify-between gap-2 border-b px-3",
-          )}
-          style={{ borderColor: "var(--cc-sidebar-border)" }}
+          className="flex h-[52px] shrink-0 items-center border-b"
+          style={{ borderColor: "var(--cc-sidebar-border)", padding: "0 0.5rem" }}
         >
-          <Link
-            to="/dashboard"
-            className={cn(
-              "flex items-center rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]",
-              iconOnly ? "justify-center" : "min-w-0 flex-1 gap-2.5",
-            )}
-            aria-label="ClearClause dashboard"
-            title={iconOnly ? "ClearClause dashboard" : undefined}
+          {/* Logo — fades + clips as sidebar collapses */}
+          <div
+            className="flex min-w-0 flex-1 overflow-hidden"
+            style={{
+              maxWidth: iconOnly ? 0 : "100%",
+              opacity: iconOnly ? 0 : 1,
+              transition: "max-width 220ms ease, opacity 150ms ease",
+              pointerEvents: iconOnly ? "none" : undefined,
+            }}
           >
-            <BrandIcon size={iconOnly ? 28 : 30} className="shrink-0" />
-            {!iconOnly ? (
+            <Link
+              to="/dashboard"
+              className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
+              aria-label="ClearClause dashboard"
+              tabIndex={iconOnly ? -1 : undefined}
+            >
+              <BrandIcon size={30} className="shrink-0" />
               <span
-                style={{
-                  fontSize: 15,
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
-                  color: "var(--cc-title)",
-                  lineHeight: 1,
-                }}
+                className="truncate"
+                style={{ fontSize: 15, fontWeight: 600, letterSpacing: "-0.02em", color: "var(--cc-title)", lineHeight: 1 }}
               >
                 ClearClause
               </span>
-            ) : null}
-          </Link>
+            </Link>
+          </div>
+
+          {/* Toggle — fixed position, always visible */}
           {!isMobileSheet ? (
-            <IconButton onClick={toggle} aria-label={open ? "Collapse sidebar" : "Expand sidebar"}>
-              {open ? (
-                <PanelLeftClose className="h-5 w-5" aria-hidden />
-              ) : (
-                <PanelLeft className="h-5 w-5" aria-hidden />
-              )}
+            <IconButton onClick={toggle} aria-label={open ? "Collapse sidebar" : "Expand sidebar"} className="shrink-0">
+              {open ? <PanelLeftClose className="h-5 w-5" aria-hidden /> : <PanelLeft className="h-5 w-5" aria-hidden />}
             </IconButton>
-          ) : null}
+          ) : (
+            /* Mobile sheet: spacer so content doesn't crowd the right edge */
+            <div className="w-2" />
+          )}
         </div>
 
         <SidebarNav
@@ -169,29 +169,42 @@ function LayoutShell() {
         />
 
         <div
-          className={cn("mt-auto", iconOnly ? "flex flex-col items-center gap-1 p-2" : "p-3")}
+          className="mt-auto flex flex-col gap-0.5 p-2"
           style={{ borderTop: "0.5px solid var(--cc-sidebar-border)" }}
         >
-          {!iconOnly ? (
-            <p
-              className="truncate px-[10px] py-1"
-              style={{ fontSize: 12, color: "var(--cc-email-color)" }}
-              title={user?.email ?? ""}
-            >
-              {user?.email}
-            </p>
-          ) : null}
+          {/* Email — fades out when collapsed */}
+          <p
+            className="truncate px-[10px] py-1"
+            style={{
+              fontSize: 12,
+              color: "var(--cc-email-color)",
+              maxHeight: iconOnly ? 0 : "2rem",
+              opacity: iconOnly ? 0 : 1,
+              overflow: "hidden",
+              transition: "max-height 220ms ease, opacity 150ms ease",
+              pointerEvents: iconOnly ? "none" : undefined,
+            }}
+            title={user?.email ?? ""}
+            aria-hidden={iconOnly}
+          >
+            {user?.email}
+          </p>
+
+          {/* Theme toggle */}
           <button
             type="button"
-            className={cn(
-              "flex min-h-[38px] items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)] transition-colors duration-200",
-              iconOnly ? "h-9 w-9 justify-center px-0 py-0" : "mt-1 w-full gap-2.5 px-[10px] py-[9px]",
-            )}
+            className="flex min-h-[38px] items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
             style={{
               color: "var(--cc-nav-inactive-color)",
               background: "transparent",
               border: "none",
               cursor: "pointer",
+              padding: iconOnly ? "0" : "9px 10px",
+              gap: iconOnly ? "0" : "10px",
+              justifyContent: iconOnly ? "center" : undefined,
+              width: iconOnly ? "2.25rem" : undefined,
+              height: iconOnly ? "2.25rem" : undefined,
+              transition: "background 150ms ease, padding 220ms ease, width 220ms ease",
             }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--cc-nav-hover-bg)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
@@ -207,19 +220,24 @@ function LayoutShell() {
             ) : (
               <Moon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden />
             )}
-            {!iconOnly ? (isDark ? "Light mode" : "Dark mode") : null}
+            <SidebarLabel collapsed={iconOnly}>{isDark ? "Light mode" : "Dark mode"}</SidebarLabel>
           </button>
+
+          {/* Sign out */}
           <button
             type="button"
-            className={cn(
-              "flex min-h-[38px] items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2 transition-colors duration-200",
-              iconOnly ? "h-9 w-9 justify-center px-0 py-0" : "mt-0.5 w-full gap-2.5 px-[10px] py-[9px]",
-            )}
+            className="flex min-h-[38px] items-center rounded-[10px] text-[14px] font-medium outline-none focus-visible:ring-2"
             style={{
               color: "var(--cc-sign-out-color)",
               background: "transparent",
               border: "none",
               cursor: "pointer",
+              padding: iconOnly ? "0" : "9px 10px",
+              gap: iconOnly ? "0" : "10px",
+              justifyContent: iconOnly ? "center" : undefined,
+              width: iconOnly ? "2.25rem" : undefined,
+              height: iconOnly ? "2.25rem" : undefined,
+              transition: "background 150ms ease, padding 220ms ease, width 220ms ease",
             }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = isDark ? "rgba(255,69,58,0.1)" : "rgba(255,59,48,0.08)"; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
@@ -232,7 +250,7 @@ function LayoutShell() {
             title={iconOnly ? "Sign out" : undefined}
           >
             <LogOut className="h-[18px] w-[18px] shrink-0" aria-hidden />
-            {!iconOnly ? "Sign out" : null}
+            <SidebarLabel collapsed={iconOnly}>Sign out</SidebarLabel>
           </button>
         </div>
       </>
@@ -241,16 +259,13 @@ function LayoutShell() {
 
   return (
     <div className="min-h-[100dvh]" style={{ background: "var(--cc-bg)", color: "var(--cc-title)" }}>
-      <WakeBanner visible={isWaking} />
       <div className="flex min-h-[100dvh]">
 
         <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden flex-col lg:flex",
-            "transition-[width] duration-200 ease-out",
-          )}
+          className="fixed inset-y-0 left-0 z-40 hidden flex-col lg:flex"
           style={{
             width: open ? SIDEBAR_WIDTH_OPEN : SIDEBAR_WIDTH_COLLAPSED,
+            transition: "width 220ms cubic-bezier(0.4, 0, 0.2, 1)",
             background: "var(--cc-sidebar-bg)",
             borderRight: "0.5px solid var(--cc-sidebar-border)",
             backdropFilter: "blur(20px)",
@@ -264,10 +279,8 @@ function LayoutShell() {
         </aside>
 
         <div
-          className={cn(
-            "flex flex-1 flex-col transition-[padding] duration-200 ease-out",
-            open ? "lg:pl-64" : "lg:pl-[3.25rem]",
-          )}
+          className={cn("flex flex-1 flex-col", open ? "lg:pl-64" : "lg:pl-[3.25rem]")}
+          style={{ transition: "padding-left 220ms cubic-bezier(0.4, 0, 0.2, 1)" }}
         >
           {/* Mobile header */}
           <div
