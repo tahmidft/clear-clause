@@ -1,6 +1,6 @@
 import * as React from "react";
-import { useLocation } from "react-router-dom";
-import { AlertCircle, Search, Upload } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { AlertCircle, AlertTriangle, Ban, Clock3, Lightbulb, Search, Shield, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnalysisCompleteDialog } from "@/components/AnalysisCompleteDialog";
@@ -14,7 +14,9 @@ import { BUCKET_ORDER, type ContractBucket, contractBucket } from "@/lib/contrac
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { analyzeContract, deleteContract, uploadContract } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
+import { usePreferences } from "@/context/PreferencesContext";
 import type { Contract } from "@/types";
+import { useTheme } from "next-themes";
 
 type ProgressSession = {
   contractId: string;
@@ -22,6 +24,19 @@ type ProgressSession = {
   running: boolean;
   finishing: boolean;
 };
+
+function preferenceHighlights(preferences: NonNullable<ReturnType<typeof usePreferences>["preferences"]>) {
+  return [
+    `Payment in ${preferences.payment_terms_days} days or less`,
+    preferences.requires_deposit
+      ? `Deposit required (${preferences.min_deposit_percent}% min)`
+      : "Deposit not required",
+    preferences.ip_ownership ? "Client keeps IP ownership" : "IP ownership flexible",
+    preferences.kill_fee_required ? "Kill fee required" : "Kill fee optional",
+  ];
+}
+
+type StatCard = { label: string; value: string; color?: string };
 
 export default function Dashboard() {
   const location = useLocation();
@@ -39,6 +54,18 @@ export default function Dashboard() {
     invalidate,
     retry,
   } = useDashboardData();
+  const { preferences, loading: preferencesLoading } = usePreferences();
+  const { resolvedTheme } = useTheme();
+  const [uploadVisible, setUploadVisible] = React.useState(true);
+  const uploadSentinelRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = uploadSentinelRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => setUploadVisible(entry.isIntersecting), { threshold: 0 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  const isDark = resolvedTheme === "dark";
 
   // Returning from analysis view: refetch so buckets match server (backup if cache patch missed).
   React.useEffect(() => {
@@ -298,6 +325,27 @@ export default function Dashboard() {
   }, [filteredContracts, analyses, analyzingIds, errorIds, progressSession, sortContracts]);
 
   const hasAnyInBuckets = BUCKET_ORDER.some((b) => contractsByBucket[b].length > 0);
+  const completedContracts = contracts.filter((c) => {
+    const busy = analyzingIds.has(c.id) || progressSession?.contractId === c.id;
+    return Boolean(analyses[c.id]) && !busy && !errorIds.has(c.id);
+  });
+  const reviewedCount = completedContracts.length;
+  const avgScore = reviewedCount
+    ? Math.round(
+        completedContracts.reduce((sum, c) => sum + (analyses[c.id]?.overall_score ?? 0), 0) / reviewedCount,
+      )
+    : 0;
+  const acceptCount = completedContracts.filter((c) => analyses[c.id]?.recommendation === "accept").length;
+  const rejectCount = completedContracts.filter((c) => analyses[c.id]?.recommendation === "reject").length;
+  const scamCount = completedContracts.filter((c) => Boolean(analyses[c.id]?.likely_scam)).length;
+
+  const statCards: StatCard[] = [
+    { label: "Reviewed", value: String(reviewedCount) },
+    { label: "Avg Score", value: reviewedCount ? String(avgScore) : "—", color: isDark ? "#0A84FF" : "#007AFF" },
+    { label: "Accept", value: String(acceptCount), color: isDark ? "#30D158" : "#34C759" },
+    { label: "Reject", value: String(rejectCount), color: isDark ? "#FF453A" : "#FF3B30" },
+    { label: "Scam", value: String(scamCount), color: isDark ? "#FF9F0A" : "#FF9500" },
+  ];
 
   const analysisBusy = Boolean(progressSession) || analyzingIds.size > 0 || uploading;
   const showInitialSkeleton = isLoading && contracts.length === 0;
@@ -334,6 +382,19 @@ export default function Dashboard() {
         onStartReview={startBatchReview}
       />
 
+      {/* Floating Upload button — only visible when upload zone is off-screen */}
+      {!uploadVisible && (
+        <div className="fixed right-6 top-6 z-50 safe-top">
+          <Button
+            type="button"
+            className="h-10 rounded-[12px] px-5 shadow-lg"
+            onClick={() => uploadSentinelRef.current?.scrollIntoView({ behavior: "smooth" })}
+          >
+            Upload
+          </Button>
+        </div>
+      )}
+
       {/* Page header */}
       <div className="min-w-0">
         <h1
@@ -347,15 +408,73 @@ export default function Dashboard() {
         >
           My Contracts
         </h1>
-        <p
-          className="mt-1 leading-relaxed"
-          style={{ fontSize: 13, color: "var(--cc-muted)" }}
-        >
+        <p className="mt-1 leading-relaxed" style={{ fontSize: 13, color: "var(--cc-muted)" }}>
           Contracts are grouped by recommendation.{" "}
           <span className="lg:hidden">Tap</span>
           <span className="hidden lg:inline">Hover</span> scam cards for details.
         </p>
       </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {statCards.map((card) => (
+          <div
+            key={card.label}
+            className="rounded-[12px] px-[14px] py-3"
+            style={{
+              background: isDark ? "rgba(28,28,30,0.7)" : "#fff",
+              border: isDark ? "0.5px solid rgba(255,255,255,0.08)" : "0.5px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                letterSpacing: "-0.03em",
+                lineHeight: 1.1,
+                color: card.color ?? "var(--cc-title)",
+              }}
+            >
+              {card.value}
+            </p>
+            <p
+              className="mt-1"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)",
+              }}
+            >
+              {card.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {scamCount > 0 ? (
+        <div
+          className="mt-4 flex items-center justify-between gap-3 rounded-[12px] px-4 py-3"
+          style={{
+            background: "rgba(255,159,10,0.08)",
+            border: "0.5px solid rgba(255,159,10,0.25)",
+          }}
+        >
+          <div className="flex min-w-0 items-center gap-2.5">
+            <AlertTriangle className="h-4 w-4 shrink-0" style={{ color: "#FF9F0A" }} aria-hidden />
+            <p className="text-[13px]" style={{ color: "var(--cc-body)" }}>
+              <span style={{ color: "#FF9F0A", fontWeight: 700 }}>{scamCount}</span> contracts flagged as likely scams
+              — review before accepting.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 text-[13px] font-medium"
+            style={{ color: "#0A84FF", background: "transparent", border: "none", cursor: "pointer" }}
+            onClick={() => document.getElementById("bucket-likely_scam")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            View →
+          </button>
+        </div>
+      ) : null}
 
       {progressSession ? (
         <div className="mt-6">
@@ -389,7 +508,76 @@ export default function Dashboard() {
       ) : null}
 
       <div className="mt-8">
-        <UploadZone onFilesSelected={(files) => void onUploadMany(files)} disabled={analysisBusy} className="mb-8" />
+        <div className="mb-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div id="dashboard-upload-zone" ref={uploadSentinelRef}>
+            <UploadZone onFilesSelected={(files) => void onUploadMany(files)} disabled={analysisBusy} />
+          </div>
+          <div
+            className="rounded-[14px] p-4 sm:p-5"
+            style={{
+              background: isDark ? "rgba(28,28,30,0.7)" : "#fff",
+              border: isDark ? "0.5px solid rgba(255,255,255,0.08)" : "0.5px solid rgba(0,0,0,0.08)",
+            }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--cc-title)" }}>Your preferences</h2>
+                <p
+                  className="mt-1 text-[11px]"
+                  style={{ color: isDark ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)" }}
+                >
+                  Contracts are scored against these.
+                </p>
+              </div>
+              <Link to="/settings" className="text-[13px] font-medium" style={{ color: "#0A84FF" }}>
+                Edit
+              </Link>
+            </div>
+
+            {preferencesLoading && !preferences ? (
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton key={i} className="h-8 rounded-[10px]" />
+                ))}
+              </div>
+            ) : preferences ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[
+                  { icon: Clock3, label: `Payment ≤ ${preferences.payment_terms_days} days` },
+                  {
+                    icon: Shield,
+                    label: preferences.requires_deposit
+                      ? `Deposit required (${preferences.min_deposit_percent}%+)`
+                      : "Deposit flexible",
+                  },
+                  {
+                    icon: Lightbulb,
+                    label: preferences.ip_ownership ? "Client IP ownership" : "Flexible IP ownership",
+                  },
+                  { icon: Ban, label: preferences.kill_fee_required ? "Kill fee required" : "Kill fee optional" },
+                  ...preferenceHighlights(preferences).slice(0, 2).map((label) => ({ icon: Shield, label })),
+                ].map(({ icon: Icon, label }) => (
+                  <div
+                    key={label}
+                    className="inline-flex items-center gap-1.5 rounded-[20px] px-[10px] py-[5px] text-[12px] font-medium"
+                    style={{
+                      background: isDark ? "rgba(10,132,255,0.1)" : "rgba(0,122,255,0.08)",
+                      border: isDark ? "0.5px solid rgba(10,132,255,0.25)" : "0.5px solid rgba(0,122,255,0.2)",
+                      color: isDark ? "#0A84FF" : "#007AFF",
+                    }}
+                  >
+                    <Icon className="h-3.5 w-3.5" aria-hidden />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-[10px] px-3 py-3 text-[13px]" style={{ color: "var(--cc-muted)" }}>
+                Add your deal preferences in Settings to personalize scoring.
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Search + Sort/Filter controls */}
         <div className="mb-6 space-y-3">
@@ -543,7 +731,8 @@ export default function Dashboard() {
         ) : (
           <div>
             {BUCKET_ORDER.map((bucket) => (
-              <DashboardSection key={bucket} bucket={bucket} count={contractsByBucket[bucket].length}>
+              <div key={bucket} id={`bucket-${bucket}`}>
+                <DashboardSection bucket={bucket} count={contractsByBucket[bucket].length}>
                 {contractsByBucket[bucket].map((c) => {
                   const isFinishing = progressSession?.contractId === c.id && progressSession.finishing;
                   const isAnalyzing = analyzingIds.has(c.id) && !isFinishing;
@@ -561,7 +750,8 @@ export default function Dashboard() {
                     />
                   );
                 })}
-              </DashboardSection>
+                </DashboardSection>
+              </div>
             ))}
           </div>
         )}

@@ -100,16 +100,15 @@ export default function AnalysisPage() {
 
   return (
     <div className="min-w-0">
-      <Button
-        asChild
-        variant="default"
-        className="mb-6 min-h-11 gap-1.5 rounded-[12px] px-4 text-[15px] font-medium"
+      <Link
+        to="/dashboard"
+        aria-label="Back to dashboard"
+        className="mb-6 inline-flex items-center gap-1.5 text-[13px] font-medium no-underline outline-none focus-visible:ring-2 focus-visible:ring-[var(--cc-accent)]"
+        style={{ color: "var(--cc-back-link)" }}
       >
-        <Link to="/dashboard" aria-label="Back to dashboard">
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back to dashboard
-        </Link>
-      </Button>
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+        Back to dashboard
+      </Link>
 
       {loading ? (
         <div className="space-y-4" aria-busy="true" aria-label="Loading analysis">
