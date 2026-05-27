@@ -363,6 +363,8 @@ Opens Vite (default `http://localhost:5173`), restarts API, runs smoke checks. U
 | **Render** | `backend/` — `uvicorn main:app --host 0.0.0.0 --port $PORT` |
 | **Keep-alive** | `.github/workflows/render-keepalive.yml` pings `/health` every 10 minutes |
 
+On Render's free tier the API sleeps after idle time; the first request after sleep can take 30–90 seconds—that is an infrastructure constraint, not slow application code. GitHub Actions pings `GET /health` every 10 minutes (see the diagram above) to reduce how often that happens; it does not guarantee zero cold starts. The dashboard avoids cold-start alarm copy on every load, though an occasional slow first request is still possible.
+
 Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ---
