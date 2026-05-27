@@ -3,12 +3,12 @@
 **AI-powered freelance contract analysis** — upload a PDF or DOCX, get per-section risk scoring, preference-aware recommendations, and a dedicated fraud-detection layer. Built as a full-stack portfolio system, not a thin wrapper around a language model.
 
 [![Live Demo](https://img.shields.io/badge/demo-clearclause.vercel.app-2563eb?style=for-the-badge)](https://clearclause.vercel.app)
-[![Tech Stack](https://img.shields.io/badge/stack-React%20%7C%20FastAPI%20%7C%20Supabase%20%7C%20Gemini-0f766e?style=for-the-badge)](#-tech-stack)
+[![Tech Stack](https://img.shields.io/badge/stack-React%20%7C%20FastAPI%20%7C%20Supabase%20%7C%20Gemini-0f766e?style=for-the-badge)](#tech-stack)
 [![License: MIT](https://img.shields.io/badge/license-MIT-6b7280?style=for-the-badge)](LICENSE)
 
 ---
 
-## 📋 Overview
+## Overview
 
 Freelancers often sign client agreements without spotting harsh payment terms, one-sided IP grabs, or outright scam patterns buried in legalese. ClearClause turns opaque contract PDFs/DOCX files into **structured, actionable analysis**: section-by-section plain-English summaries, preference conflicts, accept/reject guidance, and a **three-tier scam risk model** backed by deterministic pattern matching—not a single LLM score.
 
@@ -16,7 +16,7 @@ Freelancers often sign client agreements without spotting harsh payment terms, o
 
 ---
 
-## 🌐 Live demo
+## Live demo
 
 | Service | URL |
 |---------|-----|
@@ -26,7 +26,7 @@ Freelancers often sign client agreements without spotting harsh payment terms, o
 
 ---
 
-## 🧪 Try with sample contracts
+## Try with sample contracts
 
 No contract handy? **Sign in** at the [live demo](https://clearclause.vercel.app), open **Dashboard**, and upload a `.docx` from the repo [`samples/`](samples/) folder (clone locally or download from GitHub).
 
@@ -41,27 +41,27 @@ Clause-level detail: [`samples/README.md`](samples/README.md).
 
 ---
 
-## ✨ Features
+## Features
 
-### 🔐 Auth
+### Auth
 
 - Email/password sign-up and sign-in via **Supabase Auth**
 - JWT sessions; the FastAPI layer validates every protected request against Supabase’s `GET /auth/v1/user` (no shared JWT secret on the API)
 
-### 📤 Upload
+### Upload
 
 - **PDF** (`pdfplumber`) and **DOCX** (`python-docx`) parsed server-side
 - Files stored in **Supabase Storage**; metadata in Postgres
 - **10 MB** upload limit, magic-byte validation, per-user rate limits
 
-### 🧠 Analysis
+### Analysis
 
 - **Google Gemini** (default `gemini-2.5-flash-lite`, configurable `GEMINI_MODEL` with automatic model fallbacks)
 - **Per-section** JSONB scoring (title, plain English, original quote, risk level, preference conflict flag)
 - **`preference_conflicts`** extracted as a separate structured field
 - **`overall_score`** (0–100) and **`recommendation`** (`accept` \| `reject`) with Pydantic validation + normalization fallbacks for malformed model output
 
-### 📊 Dashboard
+### Dashboard
 
 - Preference-weighted recommendations surfaced in the UI
 - Stats strip (reviewed count, average score, accept/reject, scam attention)
@@ -69,7 +69,7 @@ Clause-level detail: [`samples/README.md`](samples/README.md).
 
 ---
 
-## 🏗 System architecture
+## System architecture
 
 ```mermaid
 flowchart LR
@@ -93,7 +93,7 @@ flowchart LR
 
 ---
 
-## 🛠 Tech stack
+## Tech stack
 
 | Layer | Technology | Why |
 |-------|------------|-----|
@@ -110,7 +110,7 @@ flowchart LR
 
 ---
 
-## 🔬 Engineering deep dive
+## Engineering deep dive
 
 ### a) Modular FastAPI architecture
 
@@ -255,7 +255,7 @@ Contract CRUD in production goes through the **FastAPI + `DATABASE_URL`** path (
 
 ---
 
-## 📡 API reference
+## API reference
 
 <details>
 <summary><strong>REST endpoints (FastAPI)</strong></summary>
@@ -278,7 +278,7 @@ All protected routes require `Authorization: Bearer <supabase_jwt>`.
 
 ---
 
-## 💻 Local development
+## Local development
 
 ### Prerequisites
 
@@ -367,7 +367,7 @@ Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ---
 
-## 🎯 What I built (skills summary)
+## What I built (skills summary)
 
 - Production **FastAPI** backend: modular routers, security headers, CORS loopback aliasing, SQLAlchemy error mapping, JSON 500 fallback
 - **Document parsing pipeline** (PDF + DOCX) with validation, retention, and Storage integration
@@ -380,7 +380,7 @@ Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ---
 
-## 📸 Screenshots
+## Screenshots
 
 ![Dashboard (dark mode)](docs/screenshots/dashboard-dark.png)
 
@@ -408,7 +408,7 @@ Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ---
 
-## 📁 Repository layout
+## Repository layout
 
 | Path | Description |
 |------|-------------|
@@ -420,6 +420,6 @@ Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ---
 
-## ⚖️ License
+## License
 
 [MIT](LICENSE) — free to use and modify. **AI output is informational only and is not legal advice.**
