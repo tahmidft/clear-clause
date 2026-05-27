@@ -4,7 +4,7 @@
 
 ClearClause is a full-stack freelance contract analyzer. Upload a PDF or DOCX, get per-section plain-English summaries, preference-weighted accept/reject guidance, and a three-tier scam risk model backed by deterministic pattern matching—not a single LLM score.
 
-This is a **portfolio project** built to demonstrate production-style engineering: structured AI output with validation fallbacks, server-side document parsing, JWT auth without shared secrets, Postgres + RLS, Supabase Storage lifecycle, and split hosting (Vercel + Render) with CI keep-alive—not a thin Gemini wrapper with a dashboard skin.
+The backend handles document parsing, structured AI output with validation fallbacks, JWT auth without shared secrets, Postgres + RLS, Supabase Storage lifecycle, and split hosting (Vercel + Render) with CI keep-alive.
 
 [![Live Demo](https://img.shields.io/badge/demo-clearclause.vercel.app-2563eb?style=for-the-badge)](https://clearclause.vercel.app)
 [![Tech Stack](https://img.shields.io/badge/stack-React%20%7C%20FastAPI%20%7C%20Supabase%20%7C%20Gemini-0f766e?style=for-the-badge)](#tech-stack)
@@ -208,9 +208,7 @@ sequenceDiagram
 
 ---
 
-## Engineering highlights (what I built vs what APIs provide)
-
-Recruiters often see “Gemini API + Supabase + React UI.” ClearClause adds substantial **application logic** on top of managed services.
+## Engineering highlights
 
 ### 1. Contract analysis pipeline (`backend/services/gemini.py`, `scam_detection.py`)
 
