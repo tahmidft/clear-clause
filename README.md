@@ -1,6 +1,10 @@
 # ClearClause
 
-**AI-powered freelance contract analysis** — upload a PDF or DOCX, get per-section risk scoring, preference-aware recommendations, and a dedicated fraud-detection layer. Built as a full-stack portfolio system, not a thin wrapper around a language model.
+**Live demo:** [https://clearclause.vercel.app](https://clearclause.vercel.app) · **API:** [https://clearclause-api.onrender.com](https://clearclause-api.onrender.com)
+
+ClearClause is a full-stack freelance contract analyzer. Upload a PDF or DOCX, get per-section plain-English summaries, preference-weighted accept/reject guidance, and a three-tier scam risk model backed by deterministic pattern matching—not a single LLM score.
+
+This is a **portfolio project** built to demonstrate production-style engineering: structured AI output with validation fallbacks, server-side document parsing, JWT auth without shared secrets, Postgres + RLS, Supabase Storage lifecycle, and split hosting (Vercel + Render) with CI keep-alive—not a thin Gemini wrapper with a dashboard skin.
 
 [![Live Demo](https://img.shields.io/badge/demo-clearclause.vercel.app-2563eb?style=for-the-badge)](https://clearclause.vercel.app)
 [![Tech Stack](https://img.shields.io/badge/stack-React%20%7C%20FastAPI%20%7C%20Supabase%20%7C%20Gemini-0f766e?style=for-the-badge)](#tech-stack)
@@ -8,27 +12,47 @@
 
 ---
 
-## Overview
+## Screenshots
 
-Freelancers often sign client agreements without spotting harsh payment terms, one-sided IP grabs, or outright scam patterns buried in legalese. ClearClause turns opaque contract PDFs/DOCX files into **structured, actionable analysis**: section-by-section plain-English summaries, preference conflicts, accept/reject guidance, and a **three-tier scam risk model** backed by deterministic pattern matching—not a single LLM score.
+### Dashboard — stats, upload, preferences, filters
 
-**Built for:** independent contractors, designers, and developers who want a fast second opinion before signing—and for recruiters evaluating full-stack + applied-AI engineering (parsing pipelines, auth, RLS, structured LLM output, production deploy).
+![ClearClause dashboard — stats strip, upload zone, preference chips, and contract filters](docs/screenshots/dashboard-dark.png)
+
+### Contract list — accept, reject, and scam buckets
+
+![ClearClause contract list grouped by recommendation and scam risk](docs/screenshots/dashboard-contract-buckets.png)
+
+### Analysis — section breakdown and score
+
+![ClearClause analysis view — payment terms section and overall accept score](docs/screenshots/analysis-good-contract.png)
+
+### Summary — accept with preference conflicts
+
+![ClearClause summary card recommending accept with listed preference conflicts](docs/screenshots/analysis-summary-accept.png)
+
+### Summary — reject (harsh contract)
+
+![ClearClause summary card for a weak contract recommending reject](docs/screenshots/analysis-summary-reject.png)
+
+### Scam detection — high-risk reject
+
+![ClearClause scam analysis with fraud signals and low overall score](docs/screenshots/analysis-scam-reject.png)
 
 ---
 
-## Live demo
+## What this project is
 
-| Service | URL |
-|---------|-----|
-| **Frontend** | [https://clearclause.vercel.app](https://clearclause.vercel.app) |
-| **API** | [https://clearclause-api.onrender.com](https://clearclause-api.onrender.com) |
-| **Health** | `GET /health` → `{"status":"ok"}` |
+| | |
+|---|---|
+| **Problem** | Freelancers sign client agreements without spotting harsh payment terms, one-sided IP clauses, or predatory scam patterns buried in legalese. A single “AI score” does not explain *which* clauses conflict with *their* business rules. |
+| **Solution** | ClearClause extracts contract text server-side, runs structured Gemini analysis per section against 13 user-defined preferences, and merges a separate weighted regex scam engine. The dashboard groups contracts by accept/reject/scam and surfaces concrete signals—not generic legal advice. |
+| **Scope** | End-to-end: React SPA (Vercel), FastAPI API (Render), Supabase Auth + Postgres + Storage, Google Gemini, GitHub Actions deploy + keep-alive, local smoke tests. |
 
 ---
 
 ## Try with sample contracts
 
-No contract handy? **Sign in** at the [live demo](https://clearclause.vercel.app), open **Dashboard**, and upload a `.docx` from the repo [`samples/`](samples/) folder (clone locally or download from GitHub).
+No contract handy? **Sign in** at the [live demo](https://clearclause.vercel.app), open **Dashboard**, and upload a `.docx` from [`samples/`](samples/) (clone locally or download from GitHub).
 
 | Sample | File | Expected outcome |
 |--------|------|------------------|
@@ -43,215 +67,223 @@ Clause-level detail: [`samples/README.md`](samples/README.md).
 
 ## Features
 
-### Auth
-
-- Email/password sign-up and sign-in via **Supabase Auth**
-- JWT sessions; the FastAPI layer validates every protected request against Supabase’s `GET /auth/v1/user` (no shared JWT secret on the API)
-
-### Upload
-
-- **PDF** (`pdfplumber`) and **DOCX** (`python-docx`) parsed server-side
-- Files stored in **Supabase Storage**; metadata in Postgres
-- **10 MB** upload limit, magic-byte validation, per-user rate limits
-
-### Analysis
-
-- **Google Gemini** (default `gemini-2.5-flash-lite`, configurable `GEMINI_MODEL` with automatic model fallbacks)
-- **Per-section** JSONB scoring (title, plain English, original quote, risk level, preference conflict flag)
-- **`preference_conflicts`** extracted as a separate structured field
-- **`overall_score`** (0–100) and **`recommendation`** (`accept` \| `reject`) with Pydantic validation + normalization fallbacks for malformed model output
-
-### Dashboard
-
-- Preference-weighted recommendations surfaced in the UI
-- Stats strip (reviewed count, average score, accept/reject, scam attention)
-- Filtering by recommendation and scam bucket; mobile-friendly layout
+- **Auth** — email/password via Supabase Auth; FastAPI validates every protected request with `GET /auth/v1/user` (no API-side JWT signing secret)
+- **Upload** — PDF (`pdfplumber`) and DOCX (`python-docx`); 10 MB limit, magic-byte checks, Supabase Storage
+- **Analysis** — Gemini 2.5 Flash family (configurable `GEMINI_MODEL`, automatic model fallbacks); per-section JSONB in Postgres
+- **Preferences** — 13 structured fields (payment terms, deposit, IP, non-compete, liability, etc.) injected into every analysis prompt
+- **Scam detection** — `likely_scam`, `scam_risk` (`low` \| `medium` \| `high`), `scam_signals` JSONB; rule engine is source of truth over LLM scam fields
+- **Dashboard** — stats strip, accept/reject/scam buckets, search and status filters, mobile-friendly layout
 
 ---
 
 ## System architecture
 
-```mermaid
-flowchart LR
-  Browser["Browser"]
-  Vercel["Vercel<br/>React + Vite + TS"]
-  Render["Render<br/>FastAPI"]
-  Auth["Supabase Auth<br/>JWT /auth/v1/user"]
-  Storage["Supabase Storage<br/>contracts bucket"]
-  PG["Supabase PostgreSQL<br/>contracts · analyses · preferences"]
-  Gemini["Google Gemini<br/>2.5 Flash family"]
-  GHA["GitHub Actions<br/>every 10 min"]
+ClearClause is a React SPA on **Vercel**. The browser talks to **Supabase Auth** for sign-in and to **Render (FastAPI)** for contracts, analysis, and preferences. The API calls **Google Gemini** for clause analysis, **Supabase Storage** for files, and **Postgres** (via `DATABASE_URL`) for metadata and analysis rows. **GitHub Actions** pings `/health` on a schedule to reduce Render free-tier cold starts.
 
-  Browser --> Vercel
-  Browser --> Render
-  Render --> Auth
-  Render --> Storage
-  Render --> PG
-  Render --> Gemini
-  GHA -->|"GET /health"| Render
+```mermaid
+flowchart TB
+  subgraph client [Browser - React and Vite]
+    UI[Dashboard Analysis Settings]
+    AuthClient[Supabase JS client]
+    UI --> AuthClient
+  end
+
+  subgraph vercel_host [Vercel]
+    SPA[Static SPA build]
+  end
+
+  subgraph render_host [Render]
+    API[FastAPI]
+    Parser[pdfplumber and python-docx]
+    ScamEngine[scam_detection.py]
+    GeminiSvc[gemini.py]
+    API --> Parser
+    API --> GeminiSvc
+    GeminiSvc --> ScamEngine
+  end
+
+  subgraph supabase_host [Supabase]
+    Auth[Auth JWT]
+    DB[(Postgres preferences contracts analyses)]
+    Storage[Storage contracts bucket]
+    Auth --> DB
+  end
+
+  subgraph external [External]
+    Gemini[Google Gemini API]
+  end
+
+  subgraph ci [GitHub Actions]
+    KeepAlive[render-keepalive.yml every 10 min]
+    Deploy[deploy-production.yml on push]
+  end
+
+  UI -->|Bearer JWT| Auth
+  UI -->|REST VITE_API_URL| API
+  API -->|validate JWT| Auth
+  API -->|service role upload delete| Storage
+  API --> DB
+  GeminiSvc --> Gemini
+  KeepAlive -->|GET /health| API
+  Deploy --> vercel_host
+  Deploy --> render_host
+  SPA --> UI
 ```
+
+### Component responsibilities
+
+| Component | Role in ClearClause |
+|-----------|---------------------|
+| **Vercel** | Hosts the React SPA; `vercel.json` SPA rewrites; production env embeds `VITE_*` at build time |
+| **Render** | Hosts FastAPI; Gemini calls run **only** on the server; CORS allowlist for Vercel origins |
+| **Supabase Auth** | Issues JWTs; API re-validates each request via `/auth/v1/user` with the caller’s token |
+| **Supabase Postgres** | `preferences`, `contracts`, `analyses`; RLS for direct client access; API uses pooler `DATABASE_URL` |
+| **Supabase Storage** | `contracts` bucket; service role for upload/delete; public URL stored on contract row |
+| **Google Gemini** | Structured JSON clause analysis; model fallback chain on 404/quota/timeout |
+| **GitHub Actions** | Production deploy (Vercel + optional Render hook); scheduled `/health` keep-alive |
+
+---
+
+## Request flows
+
+### Contract upload and analysis
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant SPA as React SPA
+  participant API as FastAPI
+  participant Auth as Supabase Auth
+  participant Storage as Supabase Storage
+  participant DB as Postgres
+  participant Gemini as Google Gemini
+  participant Scam as scam_detection.py
+
+  User->>SPA: choose PDF or DOCX
+  SPA->>API: POST /contracts/upload Bearer JWT
+  API->>Auth: GET /auth/v1/user
+  Auth-->>API: user_id
+  API->>API: magic bytes rate limit parse text
+  API->>Storage: upload object service role
+  API->>DB: insert contracts row optional raw_text
+  API-->>SPA: contract_id
+
+  User->>SPA: run analysis
+  SPA->>API: POST /analysis/{contract_id} Bearer JWT
+  API->>Auth: GET /auth/v1/user
+  API->>DB: load contract and preferences
+  API->>Gemini: prompt with 13 prefs structured JSON schema
+  Gemini-->>API: JSON sections score conflicts
+  API->>API: normalize validate Pydantic
+  API->>Scam: merge_scam_into_analysis rule engine
+  Scam-->>API: likely_scam scam_risk signals
+  API->>DB: upsert analyses row JSONB
+  API-->>SPA: AnalysisResponse
+  SPA-->>User: dashboard buckets and detail view
+```
+
+### Auth validation on every protected request
+
+```mermaid
+sequenceDiagram
+  participant SPA as React SPA
+  participant API as FastAPI
+  participant Auth as Supabase Auth
+  participant DB as Postgres
+
+  SPA->>API: request Authorization Bearer JWT
+  API->>Auth: GET /auth/v1/user apikey anon JWT
+  alt valid session
+    Auth-->>API: 200 user id
+    API->>DB: query scoped by user_id
+    DB-->>API: rows
+    API-->>SPA: 200 JSON
+  else invalid or expired
+    Auth-->>API: 401
+    API-->>SPA: 401 detail
+  else auth service unreachable
+    API-->>SPA: 503 detail
+  end
+```
+
+---
+
+## Engineering highlights (what I built vs what APIs provide)
+
+Recruiters often see “Gemini API + Supabase + React UI.” ClearClause adds substantial **application logic** on top of managed services.
+
+### 1. Contract analysis pipeline (`backend/services/gemini.py`, `scam_detection.py`)
+
+| Gemini gives | ClearClause adds |
+|--------------|------------------|
+| Free-form text generation | **JSON-only prompt** with explicit schema: sections, `overall_score`, `recommendation`, `preference_conflicts` |
+| Single model call | **Length-aware prompts**: contracts over 18k chars use a compact section set; up to 48k chars excerpted; **retry** with compact prompt on 502 parse/validate failure |
+| Model availability | **Fallback chain** (`GEMINI_MODEL` → `gemini-2.5-flash-lite`, `gemini-2.5-flash`, `gemini-2.0-flash-lite`, …) on 404, quota, timeout |
+| Unstructured output | **`_normalize_analysis_payload`** coerces risk enums, clamps scores, caps sections; **Pydantic `AnalysisResult`** validation; fence-stripped JSON extraction |
+| Scam classification in LLM output | **LLM scam fields zeroed** before merge; **`scam_detection.py`** weighted regex rules + legitimacy dampeners → `likely_scam`, `scam_risk`, `scam_signals`; forces reject and score cap on confirmed fraud |
+| Generic scoring | **13 preference fields** embedded in prompt; per-section `conflicts_with_preference`; separate `preference_conflicts` JSONB column |
+
+### 2. Auth and security model (`backend/deps.py`, `main.py`, `supabase/schema.sql`)
+
+| Supabase gives | ClearClause adds |
+|----------------|------------------|
+| JWT issuance and user table | **Remote validation** on every protected route: `GET /auth/v1/user` with caller’s bearer token + anon `apikey`—no shared JWT secret on FastAPI |
+| RLS policies | **Subquery ownership** on `analyses` (`contract_id IN (SELECT … WHERE user_id = auth.uid())`) because analyses have no `user_id` column |
+| Service role key | **Strict separation**: service role **only** for Storage upload/delete; anon key for auth validation; Postgres via `DATABASE_URL` for app CRUD |
+| Default CORS | **Explicit `CORS_ORIGINS`** in production; **`cors_helpers.with_loopback_aliases`** mirrors `localhost` ↔ `127.0.0.1` for local Vite |
+| N/A | **Security headers middleware** (nosniff, DENY frame, HSTS in prod, referrer/permissions policy); **global JSON 500 handler** so errors pass through CORS |
+
+### 3. File handling (`backend/services/parser.py`, `storage.py`, `routers/contracts.py`)
+
+| Supabase Storage gives | ClearClause adds |
+|------------------------|------------------|
+| Blob store | **PDF** (`pdfplumber` per page) and **DOCX** (`python-docx` paragraphs) extraction before any LLM call |
+| Upload API | **10 MB cap**, MIME + **magic-byte** validation (`%PDF`, ZIP signature for DOCX) |
+| Public URLs | **Lifecycle**: upload → `storage_path` + `file_url` on `contracts`; delete removes Storage object **and** DB row; **`ON DELETE CASCADE`** on `analyses` |
+| N/A | **`CONTRACT_TEXT_PERSISTENCE_ENABLED`** and **`CONTRACT_TEXT_RETENTION_DAYS`**: optional `raw_text` in DB, auto-nulled after retention window on list/upload |
+
+### 4. Rate limiting design (`backend/security.py`)
+
+| Platform gives | ClearClause adds |
+|----------------|------------------|
+| N/A | **`FixedWindowRateLimiter`**: per-user keys `upload:{user_id}` and `analysis:{user_id}` |
+| N/A | **Separate limits** via env: `RATE_LIMIT_UPLOADS_PER_MINUTE` (default 20), `RATE_LIMIT_ANALYSIS_PER_MINUTE` (default 30); 429 with clear message |
+| N/A | **In-process** sliding window (60s); suitable for single-instance Render; tests in `backend/tests/test_security.py` |
+
+### 5. CI, keep-alive, and verification (`scripts/`, `.github/workflows/`)
+
+| GitHub / Render give | ClearClause adds |
+|----------------------|------------------|
+| Hosted runners | **`deploy-production.yml`**: Render deploy hook (optional) + Vercel production deploy + **alias `clearclause.vercel.app`**; fails on invalid Vercel token (`pipefail`) |
+| Free-tier sleep | **`render-keepalive.yml`**: `GET /health` every 10 minutes (reduces cold starts; does not eliminate them) |
+| N/A | **`scripts/smoke-local.py`**: config, parser, storage, DB, Gemini, health—run via **`scripts/dev-up.sh`** |
+| N/A | **`scripts/verify-*.sh`**, **`scripts/deploy-production.sh`** for staged production checks |
 
 ---
 
 ## Tech stack
 
-| Layer | Technology | Why |
-|-------|------------|-----|
-| **Frontend** | React + TypeScript + Vite | Type-safe SPA, fast dev/build, deployed on Vercel |
-| **UI** | Tailwind CSS, shadcn/ui, Lucide | Consistent components, accessible patterns |
-| **API** | FastAPI (Python 3.11+) | Async REST, modular routers, OpenAPI-friendly |
-| **Database** | Supabase PostgreSQL | Managed Postgres, migrations, connection pooling |
-| **Auth** | Supabase Auth | JWT issuance; API validates tokens remotely |
-| **Storage** | Supabase Storage | Durable file blobs with service-role upload/delete |
-| **AI** | Gemini 2.5 Flash (lite default) | Fast structured JSON generation; fallback model chain |
-| **Parsing** | pdfplumber, python-docx | Server-side text extraction before LLM prompts |
-| **Hosting** | Vercel + Render | Zero-config frontend; Python web service on free tier |
-| **Ops** | GitHub Actions keep-alive | Reduces Render cold starts via scheduled `/health` pings |
+| Layer | Tools |
+|-------|--------|
+| Frontend | React 18, TypeScript, Vite, TanStack Query, Tailwind, shadcn/ui |
+| Backend | FastAPI, SQLAlchemy, pdfplumber, python-docx, google-generativeai |
+| Database & auth | Supabase (Postgres, RLS, email/password auth, Storage) |
+| AI | Google Gemini 2.5 Flash family (`GEMINI_MODEL`, fallbacks) |
+| Hosting | Vercel (SPA) · Render (API) · [clearclause.vercel.app](https://clearclause.vercel.app) |
 
 ---
 
-## Engineering deep dive
+## Database (Supabase)
 
-### a) Modular FastAPI architecture
+| Table | Purpose |
+|-------|---------|
+| `preferences` | 1:1 with user — 13 contract criteria (payment days, deposit %, IP, non-compete, liability, etc.) |
+| `contracts` | `file_name`, `storage_path`, `file_url`, optional `raw_text`, `user_id` |
+| `analyses` | 1:1 with contract — `sections` JSONB, `overall_score`, `recommendation`, `preference_conflicts`, scam fields |
 
-- **Domain routers:** `/contracts`, `/analysis`, `/preferences` — thin handlers, logic in `services/`
-- **Security headers middleware:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, **HSTS** in production
-- **CORS:** Starlette `CORSMiddleware` plus **`cors_helpers.with_loopback_aliases`** so `localhost` ↔ `127.0.0.1` on the same port both work during local dev
-- **`db_errors.py`:** maps SQLAlchemy exceptions to typed HTTP responses
-- **Global 500 handler:** every unhandled exception returns JSON (critical—raw tracebacks bypass CORS headers on some proxies)
+RLS: users manage own `preferences` and `contracts`; `analyses` readable when `contract_id` belongs to the user (subquery). App CRUD goes through FastAPI + `DATABASE_URL`; RLS protects direct Supabase client access with the anon key.
 
-### b) JWT authentication
-
-Protected routes depend on `get_current_user_id` in `backend/deps.py`:
-
-1. Read `Authorization: Bearer <jwt>`
-2. Call Supabase **`GET /auth/v1/user`** with the user’s JWT + anon `apikey`
-3. Extract `user_id` from the response; scope all DB queries by that UUID
-
-No API-side JWT signing secret—the identity provider remains the source of truth. **`GET /health/config`** exposes non-sensitive diagnostics (which env vars are set, Supabase reachability) without leaking secrets.
-
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant FE as Frontend
-  participant SA as Supabase Auth
-  participant API as FastAPI
-  participant DB as PostgreSQL
-
-  U->>FE: sign in (email/password)
-  FE->>SA: authenticate
-  SA-->>FE: JWT
-  FE->>API: request + Bearer JWT
-  API->>SA: GET /auth/v1/user
-  SA-->>API: user id
-  API->>DB: query scoped by user_id
-  DB-->>API: rows
-  API-->>FE: JSON response
-```
-
-### c) Contract parsing pipeline
-
-| Format | Library | Notes |
-|--------|---------|--------|
-| PDF | `pdfplumber` | Page-by-page text extraction |
-| DOCX | `python-docx` | Paragraph text joined |
-
-Flow: **upload → validate type/size → extract text → (optional) persist `raw_text` → Storage + DB row**.
-
-- **`CONTRACT_TEXT_PERSISTENCE_ENABLED`** — gate whether parsed text is stored
-- **`CONTRACT_TEXT_RETENTION_DAYS`** — background job nulls `raw_text` after retention window
-
-### d) AI analysis & structured output
-
-1. Cleaned contract text + **13 preference fields** are embedded in the Gemini prompt (`backend/services/gemini.py`).
-2. Model returns JSON only (sections, scores, conflicts); fences stripped via `_extract_json_object`.
-3. **`_normalize_analysis_payload`** coerces bad enums, clamps scores, caps section count—then **Pydantic `AnalysisResult`** validates.
-4. On **502** parse/validate failure, the service retries with a compact prompt for long contracts (>18k chars).
-5. **Scam fields from the LLM are intentionally zeroed** before merge—fraud classification is owned by the rule engine (below).
-
-### e) Scam detection — 3-tier risk system
-
-This is **not** a binary “GPT said scam” flag.
-
-| Field | Type | Role |
-|-------|------|------|
-| `scam_signals` | JSONB array | Human-readable labels (e.g. crypto upfront fee, credential harvest) |
-| `scam_risk` | `low` \| `medium` \| `high` | Tier from weighted regex rules + legitimacy dampeners |
-| `likely_scam` | boolean | Hard flag when score ≥ thresholds or multiple critical pattern hits |
-
-**`backend/services/scam_detection.py`** runs ~10 weighted rules (crypto upfront, contractor-pays-client, credential requests, etc.). Scores aggregate rule weights; LLC/address patterns **reduce** false positives on harsh but legitimate deals. **`merge_scam_into_analysis`** makes the engine the source of truth, merges filtered AI signal text, forces **`reject`** and caps **`overall_score`** when `likely_scam` is true.
-
-```text
-contract text → regex rules → weighted score → risk tier + signals
-                              ↓
-                    merge with Gemini clause analysis → persisted JSONB
-```
-
-### f) Preference-weighted scoring
-
-The `preferences` table holds **13 structured fields** used in every analysis prompt:
-
-| Numeric thresholds | Boolean flags |
-|--------------------|---------------|
-| `payment_terms_days`, `min_deposit_percent`, `max_revision_rounds`, `termination_notice_days` | `ip_ownership`, `kill_fee_required`, `requires_deposit`, `non_compete`, `unpaid_revisions`, `liability_cap_required`, `written_scope_required`, `accepts_broad_indemnification` |
-
-Gemini scores each section with `conflicts_with_preference` and emits a top-level **`preference_conflicts`** list. Recommendations are personalized: the same harsh Net-90 clause may be acceptable for one user’s payment window and a hard reject for another.
-
-### g) Database schema & row level security
-
-```mermaid
-erDiagram
-  auth_users ||--o| preferences : "1:1 user_id"
-  auth_users ||--o{ contracts : "owns"
-  contracts ||--o| analyses : "1:1 contract_id"
-
-  auth_users {
-    uuid id PK
-  }
-  preferences {
-    uuid id PK
-    uuid user_id FK
-    int payment_terms_days
-    boolean ip_ownership
-  }
-  contracts {
-    uuid id PK
-    uuid user_id FK
-    text file_name
-    text storage_path
-    text file_url
-    text raw_text
-  }
-  analyses {
-    uuid id PK
-    uuid contract_id FK
-    jsonb sections
-    int overall_score
-    text recommendation
-    jsonb preference_conflicts
-    boolean likely_scam
-    text scam_risk
-    jsonb scam_signals
-  }
-```
-
-**RLS policies** (from [`supabase/schema.sql`](supabase/schema.sql)):
-
-| Table | Policy | Rule |
-|-------|--------|------|
-| `preferences` | Users can manage own preferences | `auth.uid() = user_id` |
-| `contracts` | Users can manage own contracts | `auth.uid() = user_id` |
-| `analyses` | Users can view own analyses | `contract_id IN (SELECT id FROM contracts WHERE user_id = auth.uid())` |
-
-**Why analyses use a subquery:** `analyses` has no `user_id` column—ownership is **derived through `contracts`**, so RLS enforces indirect tenancy without denormalizing user IDs.
-
-Contract CRUD in production goes through the **FastAPI + `DATABASE_URL`** path (service role connection); RLS still protects direct Supabase client access with the anon key.
-
-### h) File storage & lifecycle
-
-1. **Upload** → Supabase Storage (`contracts` bucket) → `storage_path` + `file_url` on `contracts` row  
-2. **Delete** → remove Storage object + DB row → **`ON DELETE CASCADE`** removes the 1:1 `analyses` row  
-3. **Unique `contract_id`** on `analyses` prevents duplicate analysis records per contract  
+Schema: [`supabase/schema.sql`](supabase/schema.sql). Older projects: [`supabase/migrations/20260524_scam_and_preferences.sql`](supabase/migrations/20260524_scam_and_preferences.sql).
 
 ---
 
@@ -291,7 +323,18 @@ All protected routes require `Authorization: Bearer <supabase_jwt>`.
 
 1. Run [`supabase/schema.sql`](supabase/schema.sql) in the SQL editor.
 2. Create a **public** Storage bucket named `contracts`.
-3. Use the **connection pooler** URI for `DATABASE_URL` if local IPv6 to `db.*.supabase.co` fails.
+3. Use the **connection pooler** URI for `DATABASE_URL` if local IPv6 to `db.*.supabase.co` fails (Transaction pooler port `6543` or Session pooler `5432`; add `?sslmode=require` if needed).
+
+### Auth setup
+
+Email/password works out of the box with Supabase Auth.
+
+**If signup fails or no confirmation email:**
+
+1. **Authentication → Providers → Email**: enable signup; **Confirm email** ON for production, OFF for local/demo instant sign-in.
+2. **Authentication → URL configuration**: **Site URL** and **Redirect URLs** must include `http://127.0.0.1:5173/**` and `https://clearclause.vercel.app/**`.
+3. **`VITE_SUPABASE_ANON_KEY`**: publishable key from Project Settings → API (never service role).
+4. **Duplicate email**: sign in instead of signing up again.
 
 ### Environment variables
 
@@ -315,6 +358,8 @@ All protected routes require `Authorization: Bearer <supabase_jwt>`.
 | `DATABASE_URL` | Postgres URI | Supabase → Database → Connection string (pooler) |
 | `CORS_ORIGINS` | Allowed browser origins | Your Vercel URL + local Vite origin |
 | `APP_ENV` | `development` \| `production` | Set `production` on Render |
+| `RATE_LIMIT_UPLOADS_PER_MINUTE` | Per-user upload limit | Default `20` |
+| `RATE_LIMIT_ANALYSIS_PER_MINUTE` | Per-user analysis limit | Default `30` |
 | `CONTRACT_TEXT_PERSISTENCE_ENABLED` | Store parsed text in DB | `true` / `false` |
 | `CONTRACT_TEXT_RETENTION_DAYS` | Auto-null `raw_text` after N days | e.g. `30` |
 
@@ -333,6 +378,8 @@ cp .env.example .env
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Health check: `GET http://localhost:8000/health`
+
 **Frontend**
 
 ```bash
@@ -342,83 +389,109 @@ cp .env.example .env
 npm run dev
 ```
 
+Open the URL Vite prints (default `http://localhost:5173`).
+
 **Quick start (repo root)**
 
 ```bash
 bash scripts/dev-up.sh
 ```
 
-Opens Vite (default `http://localhost:5173`), restarts API, runs smoke checks. Upload a file from `samples/`.
+Restarts the API, starts Vite if needed, runs `scripts/smoke-local.py`. Upload a sample from `samples/`.
 
-### Auth tips
+### Scripts
 
-- **Confirm email** in Supabase → Email provider: ON for production, OFF for instant local demos.
-- Add `http://127.0.0.1:5173/**` and your production URL to **Redirect URLs**.
+| Command | Purpose |
+|---------|---------|
+| `bash scripts/dev-up.sh` | Local stack + smoke test |
+| `bash scripts/restart-dev.sh` | Restart API + Vite |
+| `bash scripts/smoke-local.py` | Parser, storage, DB, Gemini, health |
+| `bash scripts/deploy-production.sh` | Full production deploy |
+| `bash scripts/supabase-auth-urls.sh` | Sync Supabase redirect URLs (needs `SUPABASE_ACCESS_TOKEN`) |
 
-### Deployment (summary)
+Frontend: `npm run dev`, `npm run build`, `npm run lint`, `npm run test`
 
-| Target | Root / command |
-|--------|----------------|
-| **Vercel** | `frontend/` — `npm run build`, output `dist` |
-| **Render** | `backend/` — `uvicorn main:app --host 0.0.0.0 --port $PORT` |
-| **Keep-alive** | `.github/workflows/render-keepalive.yml` pings `/health` every 10 minutes |
+---
 
-On Render's free tier the API sleeps after idle time; the first request after sleep can take 30–90 seconds—that is an infrastructure constraint, not slow application code. GitHub Actions pings `GET /health` every 10 minutes (see the diagram above) to reduce how often that happens; it does not guarantee zero cold starts. The dashboard avoids cold-start alarm copy on every load, though an occasional slow first request is still possible.
+## Deploy
+
+### Frontend (Vercel)
+
+Project name: **`clearclause`**. Set **Root Directory** to `frontend`.
+
+1. Import the repo; build `npm run build`, output `dist`.
+2. Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (e.g. `https://clearclause-api.onrender.com`).
+3. Production URL: **https://clearclause.vercel.app** — alias via dashboard or `vercel alias set <deployment> clearclause.vercel.app`.
+4. `frontend/vercel.json` rewrites all routes to `index.html`.
+
+GitHub Actions (`.github/workflows/deploy-production.yml`) deploys on push to `main` when `frontend/**` changes, if `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` are set.
+
+### Backend (Render)
+
+1. Web service from `render.yaml` or manual: build `cd backend && pip install -r requirements.txt`; start `uvicorn main:app --host 0.0.0.0 --port $PORT`.
+2. Env from `backend/.env.example`; `CORS_ORIGINS` = `https://clearclause.vercel.app,http://localhost:5173,http://127.0.0.1:5173`.
+3. Optional: `bash scripts/render-sync-deploy.sh` with `RENDER_DEPLOY_HOOK_URL` or `RENDER_API_KEY`.
+
+### Keep-alive and cold starts
+
+On Render's free tier the API sleeps after idle; the first request after sleep can take 30–90 seconds—that is an infrastructure constraint, not slow application code. **`.github/workflows/render-keepalive.yml`** pings `GET /health` every 10 minutes to reduce how often that happens; it does not guarantee zero cold starts. The dashboard avoids alarming copy on every load.
 
 Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
----
+### Supabase auth URLs (production)
 
-## What I built (skills summary)
-
-- Production **FastAPI** backend: modular routers, security headers, CORS loopback aliasing, SQLAlchemy error mapping, JSON 500 fallback
-- **Document parsing pipeline** (PDF + DOCX) with validation, retention, and Storage integration
-- **Structured LLM output**: per-section JSONB schema, Pydantic validation, normalization retries for malformed Gemini responses
-- **3-tier scam detection**: weighted regex engine → risk tier → `likely_scam`, merged with clause analysis (engine is source of truth)
-- **Preference-weighted scoring** across 13 user-defined contract criteria
-- **PostgreSQL schema** with cascading deletes, 1:1 contract–analysis constraint, RLS with subquery-based analysis ownership
-- **Supabase Auth** JWT validation via remote `/auth/v1/user` (no shared secret on API)
-- **Full-stack deploy**: Vercel frontend + Render API + GitHub Actions keep-alive
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_…
+bash scripts/supabase-auth-urls.sh
+```
 
 ---
 
-## Screenshots
+## Pre-deploy regression checklist
 
-![Dashboard (dark mode)](docs/screenshots/dashboard-dark.png)
-
-*Dashboard with stats, upload, preferences, and contract filters.*
-
-![Contract list buckets](docs/screenshots/dashboard-contract-buckets.png)
-
-*Contracts grouped by accept, reject, and scam risk.*
-
-![Analysis — good contract](docs/screenshots/analysis-good-contract.png)
-
-*Section-by-section analysis with payment terms and overall accept (score 85).*
-
-![Analysis summary — accept](docs/screenshots/analysis-summary-accept.png)
-
-*Summary card recommending accept, including preference conflicts.*
-
-![Analysis summary — reject](docs/screenshots/analysis-summary-reject.png)
-
-*Summary card for a weak contract with reject guidance (score 30).*
-
-![Scam analysis — reject](docs/screenshots/analysis-scam-reject.png)
-
-*High-risk scam contract flagged for reject (score 10).*
+- Sign up with email/password and complete onboarding.
+- Sign in and confirm redirect lands on dashboard.
+- Upload PDF and DOCX under 10 MB; confirm analysis renders.
+- Confirm contracts persist after sign out/in.
+- Verify delete removes DB row and Storage object.
+- Verify `GET /health` returns `{"status":"ok"}` after deploy.
+- Ensure production `CORS_ORIGINS` is explicit (not `*`).
 
 ---
 
-## Repository layout
+## Security notes
 
-| Path | Description |
-|------|-------------|
-| [`frontend/`](frontend/) | React + TypeScript + Vite SPA |
-| [`backend/`](backend/) | FastAPI, Gemini, parsers, scam engine |
-| [`supabase/schema.sql`](supabase/schema.sql) | Tables, RLS, indexes |
-| [`samples/`](samples/) | Demo contracts (good, bad, long, scam) |
-| [`render.yaml`](render.yaml) | Render blueprint for the API |
+- All Gemini calls run **only** on the backend.
+- JWTs are validated by calling Supabase Auth `GET /auth/v1/user` with the caller’s bearer token.
+- Service role key is used for Storage only; never expose it in the frontend.
+- RLS protects tables when accessed with the anon key; API uses `DATABASE_URL` (typically bypasses RLS as the DB role).
+- Rotate keys immediately if exposed; update Render, Vercel, and Supabase together.
+
+---
+
+## Repo structure
+
+```
+├── frontend/           # React SPA (Vite, dashboard, analysis, settings)
+├── backend/
+│   ├── routers/        # contracts, analysis, preferences
+│   ├── services/       # gemini, parser, scam_detection, storage
+│   ├── deps.py         # JWT validation via Supabase Auth API
+│   └── main.py         # CORS, security headers, error handlers
+├── supabase/           # schema.sql, migrations
+├── samples/            # demo contracts (good, bad, long, scam)
+├── scripts/            # dev-up, smoke, deploy, verify
+├── docs/screenshots/   # README images
+└── .github/workflows/  # deploy-production, render-keepalive
+```
+
+---
+
+## Links
+
+- **Live app:** [https://clearclause.vercel.app](https://clearclause.vercel.app)
+- **API health:** [https://clearclause-api.onrender.com/health](https://clearclause-api.onrender.com/health)
+- **Source:** [https://github.com/tahmidft/clear-clause](https://github.com/tahmidft/clear-clause)
 
 ---
 
