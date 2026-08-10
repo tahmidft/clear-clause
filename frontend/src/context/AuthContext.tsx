@@ -40,16 +40,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     let mounted = true;
-    void supabase.auth.getSession().then(({ data }) => {
+    const SESSION_TIMEOUT_MS = 12_000;
+    const timeout = window.setTimeout(() => {
       if (!mounted) return;
-      setSession(data.session ?? null);
       setLoading(false);
-    });
+    }, SESSION_TIMEOUT_MS);
+
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!mounted) return;
+        setSession(data.session ?? null);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setSession(null);
+      })
+      .finally(() => {
+        window.clearTimeout(timeout);
+        if (mounted) setLoading(false);
+      });
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       setSession(next);
     });
     return () => {
       mounted = false;
+      window.clearTimeout(timeout);
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -59,11 +75,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!trimmed || !password) {
       return { error: "Enter your email and password." };
     }
-    const { error } = await supabase.auth.signInWithPassword({
-      email: trimmed,
-      password,
-    });
-    return { error: error ? mapSignInError(error.message) : null };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: trimmed,
+        password,
+      });
+      return { error: error ? mapSignInError(error.message) : null };
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (/failed to fetch|networkerror|load failed|name.?not.?resolved/i.test(message)) {
+        return {
+          error:
+            "Cannot reach the authentication service. Check that VITE_SUPABASE_URL points at a live Supabase project.",
+        };
+      }
+      return { error: message || "Sign in failed unexpectedly." };
+    }
   }, []);
 
   const signUp = React.useCallback(async (email: string, password: string): Promise<SignUpResult> => {

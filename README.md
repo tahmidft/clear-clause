@@ -1,6 +1,6 @@
 # ClearClause
 
-**Live demo:** [https://clearclause.vercel.app](https://clearclause.vercel.app) · **API:** [https://clearclause-api.onrender.com](https://clearclause-api.onrender.com)
+**Live demo:** [https://clearclause.vercel.app](https://clearclause.vercel.app) · **API:** [https://clearclause-api-ma86.onrender.com](https://clearclause-api-ma86.onrender.com)
 
 ClearClause is a full-stack freelance contract analyzer. Upload a PDF or DOCX, get per-section plain-English summaries, preference-weighted accept/reject guidance, and a three-tier scam risk model backed by deterministic pattern matching—not a single LLM score.
 
@@ -418,7 +418,7 @@ Frontend: `npm run dev`, `npm run build`, `npm run lint`, `npm run test`
 Project name: **`clearclause`**. Set **Root Directory** to `frontend`.
 
 1. Import the repo; build `npm run build`, output `dist`.
-2. Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (e.g. `https://clearclause-api.onrender.com`).
+2. Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL` (e.g. `https://clearclause-api-ma86.onrender.com`).
 3. Production URL: **https://clearclause.vercel.app** — alias via dashboard or `vercel alias set <deployment> clearclause.vercel.app`.
 4. `frontend/vercel.json` rewrites all routes to `index.html`.
 
@@ -488,7 +488,7 @@ bash scripts/supabase-auth-urls.sh
 ## Links
 
 - **Live app:** [https://clearclause.vercel.app](https://clearclause.vercel.app)
-- **API health:** [https://clearclause-api.onrender.com/health](https://clearclause-api.onrender.com/health)
+- **API health:** [https://clearclause-api-ma86.onrender.com/health](https://clearclause-api-ma86.onrender.com/health)
 - **Source:** [https://github.com/tahmidft/clear-clause](https://github.com/tahmidft/clear-clause)
 
 ---

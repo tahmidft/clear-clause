@@ -106,28 +106,34 @@ export default function Login() {
     if (!validate()) return;
     setSubmitting(true);
     setNeedsConfirmation(false);
-    const { error } = await signIn(email, password);
-    if (error) {
-      const unconfirmed = /confirm your email/i.test(error);
-      setNeedsConfirmation(unconfirmed);
-      setPasswordError(error);
+    try {
+      const { error } = await signIn(email, password);
+      if (error) {
+        const unconfirmed = /confirm your email/i.test(error);
+        setNeedsConfirmation(unconfirmed);
+        setPasswordError(error);
+        return;
+      }
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        setPasswordError("We could not complete sign in. Please try again.");
+        return;
+      }
+      // Navigate immediately — don't block on an API call that can fail during cold starts.
+      navigate("/dashboard", { replace: true });
+      resolvePostLoginPath("/dashboard")
+        .then((path) => {
+          if (path !== "/dashboard") navigate(path, { replace: true });
+        })
+        .catch(() => {
+          /* ignore */
+        });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Sign in failed unexpectedly.";
+      setPasswordError(message);
+    } finally {
       setSubmitting(false);
-      return;
     }
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
-      setPasswordError("We could not complete sign in. Please try again.");
-      setSubmitting(false);
-      return;
-    }
-    // Navigate immediately — don't block on an API call that can fail during cold starts.
-    // The dashboard/onboarding redirect check happens in the background.
-    setSubmitting(false);
-    navigate("/dashboard", { replace: true });
-    // Fire-and-forget: redirect to onboarding if preferences not yet set.
-    resolvePostLoginPath("/dashboard").then((path) => {
-      if (path !== "/dashboard") navigate(path, { replace: true });
-    }).catch(() => {/* ignore */});
   };
 
   return (
