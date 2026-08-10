@@ -115,6 +115,7 @@ flowchart TB
 
   subgraph ci [GitHub Actions]
     KeepAlive[render-keepalive.yml every 10 min]
+    SbKeepAlive[supabase-keepalive.yml every 3 days]
     Deploy[deploy-production.yml on push]
   end
 
@@ -125,6 +126,7 @@ flowchart TB
   API --> DB
   GeminiSvc --> Gemini
   KeepAlive -->|GET /health| API
+  SbKeepAlive -->|GET demo_keepalive| DB
   Deploy --> vercel_host
   Deploy --> render_host
   SPA --> UI
@@ -140,7 +142,7 @@ flowchart TB
 | **Supabase Postgres** | `preferences`, `contracts`, `analyses`; RLS for direct client access; API uses pooler `DATABASE_URL` |
 | **Supabase Storage** | `contracts` bucket; service role for upload/delete; public URL stored on contract row |
 | **Google Gemini** | Structured JSON clause analysis; model fallback chain on 404/quota/timeout |
-| **GitHub Actions** | Production deploy (Vercel + optional Render hook); scheduled `/health` keep-alive |
+| **GitHub Actions** | Production deploy (Vercel + optional Render hook); Render + Supabase keep-alive schedules |
 
 ---
 
@@ -254,6 +256,7 @@ sequenceDiagram
 |----------------------|------------------|
 | Hosted runners | **`deploy-production.yml`**: Render deploy hook (optional) + Vercel production deploy + **alias `clearclause.vercel.app`**; fails on invalid Vercel token (`pipefail`) |
 | Free-tier sleep | **`render-keepalive.yml`**: `GET /health` every 10 minutes (reduces cold starts; does not eliminate them) |
+| Free-tier pause | **`supabase-keepalive.yml`**: every 3 days anon `SELECT` on `demo_keepalive` (prevents ~7-day inactivity pause) |
 | N/A | **`scripts/smoke-local.py`**: config, parser, storage, DB, Gemini, health—run via **`scripts/dev-up.sh`** |
 | N/A | **`scripts/verify-*.sh`**, **`scripts/deploy-production.sh`** for staged production checks |
 
@@ -278,6 +281,7 @@ sequenceDiagram
 | `preferences` | 1:1 with user — 13 contract criteria (payment days, deposit %, IP, non-compete, liability, etc.) |
 | `contracts` | `file_name`, `storage_path`, `file_url`, optional `raw_text`, `user_id` |
 | `analyses` | 1:1 with contract — `sections` JSONB, `overall_score`, `recommendation`, `preference_conflicts`, scam fields |
+| `demo_keepalive` | Single anon-readable row for keep-alive pings (see `supabase/keepalive.md`) |
 
 RLS: users manage own `preferences` and `contracts`; `analyses` readable when `contract_id` belongs to the user (subquery). App CRUD goes through FastAPI + `DATABASE_URL`; RLS protects direct Supabase client access with the anon key.
 
@@ -434,6 +438,8 @@ GitHub Actions (`.github/workflows/deploy-production.yml`) deploys on push to `m
 
 On Render's free tier the API sleeps after idle; the first request after sleep can take 30–90 seconds—that is an infrastructure constraint, not slow application code. **`.github/workflows/render-keepalive.yml`** pings `GET /health` every 10 minutes to reduce how often that happens; it does not guarantee zero cold starts. The dashboard avoids alarming copy on every load.
 
+Supabase Free Plan projects **pause after ~7 days of low DB activity**, which breaks live demo sign-in until you click Resume. **`.github/workflows/supabase-keepalive.yml`** pings `demo_keepalive` every 3 days (requires Actions secrets `SUPABASE_URL` + `SUPABASE_ANON_KEY`).
+
 Set production `CORS_ORIGINS` to explicit Vercel origin(s)—not `*`.
 
 ### Supabase auth URLs (production)
@@ -480,7 +486,7 @@ bash scripts/supabase-auth-urls.sh
 ├── samples/            # demo contracts (good, bad, long, scam)
 ├── scripts/            # dev-up, smoke, deploy, verify
 ├── docs/screenshots/   # README images
-└── .github/workflows/  # deploy-production, render-keepalive
+└── .github/workflows/  # deploy-production, render-keepalive, supabase-keepalive
 ```
 
 ---

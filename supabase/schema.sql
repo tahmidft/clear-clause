@@ -48,10 +48,22 @@ create table analyses (
   created_at timestamp with time zone default now()
 );
 
+-- Demo keep-alive (anon-readable) — used by .github/workflows/supabase-keepalive.yml
+create table if not exists demo_keepalive (
+  id int primary key default 1 check (id = 1),
+  note text not null default 'clearclause demo keep-alive',
+  updated_at timestamptz not null default now()
+);
+
+insert into demo_keepalive (id)
+values (1)
+on conflict (id) do nothing;
+
 -- Row Level Security
 alter table preferences enable row level security;
 alter table contracts enable row level security;
 alter table analyses enable row level security;
+alter table demo_keepalive enable row level security;
 
 create policy "Users can manage own preferences" on preferences for all using (auth.uid() = user_id);
 
@@ -60,3 +72,6 @@ create policy "Users can manage own contracts" on contracts for all using (auth.
 create policy "Users can view own analyses" on analyses for all using (
   contract_id in (select id from contracts where user_id = auth.uid())
 );
+
+create policy "Anon can read demo keepalive" on demo_keepalive
+  for select to anon, authenticated using (true);

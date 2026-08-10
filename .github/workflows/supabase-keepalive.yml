@@ -1,0 +1,46 @@
+# Ping Supabase REST so Free-tier projects stay active (auto-pause after ~7 days of
+# low DB activity). Recruiters hitting the live demo need Auth + Postgres up.
+# Requires repo secrets: SUPABASE_URL, SUPABASE_ANON_KEY
+# Pair with render-keepalive.yml (API cold starts) — see .cursor/skills/supabase/SKILL.md
+name: Supabase keep-alive
+
+on:
+  schedule:
+    # Every 3 days — enough headroom under the ~7-day Free-tier inactivity pause
+    - cron: "17 14 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping demo_keepalive (DB activity)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${SUPABASE_URL:-}" || -z "${SUPABASE_ANON_KEY:-}" ]]; then
+            echo "Missing secrets SUPABASE_URL and/or SUPABASE_ANON_KEY." >&2
+            echo "Add them under Settings → Secrets and variables → Actions." >&2
+            exit 1
+          fi
+          base="${SUPABASE_URL%/}"
+          url="${base}/rest/v1/demo_keepalive?select=id&limit=1"
+          for attempt in $(seq 1 3); do
+            code="$(curl -sS -o /tmp/sb-keepalive-body.txt -w '%{http_code}' --max-time 60 \
+              -H "apikey: ${SUPABASE_ANON_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+              -H "Accept: application/json" \
+              "${url}" || true)"
+            if [[ "${code}" == "200" ]]; then
+              echo "Supabase keep-alive OK (HTTP ${code})"
+              head -c 200 /tmp/sb-keepalive-body.txt; echo
+              exit 0
+            fi
+            echo "Attempt ${attempt}: HTTP ${code} — $(head -c 180 /tmp/sb-keepalive-body.txt)" >&2
+            sleep 10
+          done
+          echo "Keep-alive failed. If the table is missing, run supabase/migrations/20260810_demo_keepalive.sql" >&2
+          echo "If DNS/Auth fail, the project may be paused — Resume in the Supabase dashboard." >&2
+          exit 1

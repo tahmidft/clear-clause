@@ -46,7 +46,9 @@ Never commit real tokens. `backend/.env` already holds app secrets (`GEMINI_*`, 
    bash scripts/supabase-auth-urls.sh
    ```
 3. **Vercel** (CLI logged in): `cd frontend && npx vercel --prod --yes` or `bash scripts/deploy-production.sh`
-4. **Keep-alive**: GitHub Actions `.github/workflows/render-keepalive.yml` (every 10 min) or cron-job.org — see Render skill
+4. **Keep-alive**:
+   - Render: GitHub Actions `.github/workflows/render-keepalive.yml` (every 10 min) or cron-job.org — see Render skill
+   - Supabase: `.github/workflows/supabase-keepalive.yml` (every 3 days) — requires Actions secrets `SUPABASE_URL` + `SUPABASE_ANON_KEY`; see Supabase skill
 5. **Verify**:
    ```bash
    curl -fsS --max-time 120 https://clearclause-api.onrender.com/health
@@ -59,6 +61,7 @@ Never commit real tokens. `backend/.env` already holds app secrets (`GEMINI_*`, 
 |----------|---------|---------|
 | `deploy-production.yml` | push `main` (backend/frontend paths), `workflow_dispatch` | Render hook deploy + optional Vercel |
 | `render-keepalive.yml` | cron `*/10 * * * *`, `workflow_dispatch` | Warm Render `/health` |
+| `supabase-keepalive.yml` | cron every 3 days, `workflow_dispatch` | Prevent Free-tier Supabase pause (`demo_keepalive`) |
 | `ci.yml` | push / PR | Lint, test, build |
 
 Set `RENDER_DEPLOY_HOOK_URL` in repo secrets so pushes to `main` can redeploy the API without a local API key.

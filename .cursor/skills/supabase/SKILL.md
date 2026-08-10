@@ -155,6 +155,23 @@ bash scripts/supabase-auth-urls.sh
 
 Defaults: Site URL `https://clearclause.vercel.app`; redirects include that origin, `https://frontend-teal-ten-82.vercel.app/**`, and local Vite hosts. Override with `SUPABASE_SITE_URL` or `SUPABASE_REDIRECT_URLS` (newline-separated patterns).
 
+## Keep-alive (free tier pause)
+
+Free Plan projects **auto-pause after ~7 days of low database activity**. That makes the live demo fail sign-in with `Failed to fetch` until someone hits **Resume** in the dashboard.
+
+ClearClause prevents this with GitHub Actions (preferred over UptimeRobot for this repo — same pattern as Render):
+
+| Piece | Detail |
+|-------|--------|
+| Workflow | `.github/workflows/supabase-keepalive.yml` (cron every 3 days + `workflow_dispatch`) |
+| Ping | `GET {SUPABASE_URL}/rest/v1/demo_keepalive?select=id&limit=1` with anon key |
+| Table | `demo_keepalive` — migration `supabase/migrations/20260810_demo_keepalive.sql` (also in `schema.sql`) |
+| Secrets | Repo Actions secrets `SUPABASE_URL` and `SUPABASE_ANON_KEY` |
+
+Also keep **`render-keepalive.yml`** enabled so the API does not cold-start for 30–90s after login.
+
+Optional: UptimeRobot (or cron-job.org) can hit the same REST URL with the same headers; GitHub Actions is already integrated and free for public repos.
+
 ## Security rules for agents
 
 - Never paste or commit real keys, JWTs, or `DATABASE_URL` with passwords.
