@@ -1,0 +1,23 @@
+---
+description: Restart local dev servers after major changes without asking the user
+alwaysApply: true
+---
+
+# Auto-restart local dev services
+
+After **major** changes (backend Python, FastAPI routes/services, `requirements.txt`, frontend React/Vite, env examples, Supabase schema/migrations, or anything that affects running API or Vite behavior), **restart affected dev services yourself**. Do not ask the user to restart.
+
+## What to run
+
+- Full local stack + smoke: `bash scripts/dev-up.sh`
+- Restart API + Vite only: `bash scripts/restart-dev.sh`
+- API only: `bash scripts/restart-local-api.sh`
+
+Run from the repo root with permissions needed for process control and localhost HTTP checks (`all` or equivalent when using the agent shell).
+
+## Rules
+
+- **Never** end a task with "restart the backend if it was running" or similar — run the scripts above instead.
+- Prefer `scripts/dev-up.sh` when you changed both API and UI, or when smoke coverage is relevant.
+- After restart, briefly verify: `curl -sfS http://127.0.0.1:8000/health` and `curl -sfS -o /dev/null http://127.0.0.1:5173/`.
+- Logs: `/tmp/clearclause-uvicorn.log`, `/tmp/clearclause-vite.log`.

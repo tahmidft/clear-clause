@@ -14,7 +14,12 @@ dist-ssr
 
 # Environment (keep secrets out of git)
 .env
+.env.*
 !.env.example
+# Vercel CLI env pulls (often contain tokens)
+.env.vercel
+.env.vercel.*
+**/.env.vercel.production
 
 # Python local artifacts
 .venv/
